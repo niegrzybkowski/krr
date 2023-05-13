@@ -5,7 +5,7 @@ sg.theme('dark grey 9')
 
 DEFAULT_LOCATION = (100,100)
 
-class Manager:
+class CollectionManager:
     def __init__(self, contents_display_id):
         self.contents_display_id = contents_display_id
         self.contents = []
@@ -40,9 +40,9 @@ class Manager:
         self.contents.remove(element)
         self.update(window)
 
-class SimpleManager(Manager):
+class SimpleCollectionManager(CollectionManager):
     def __init__(self, content_name):
-        super().__init__(content_name)
+        super().__init__(f"-{content_name}-")
         self.content_name = content_name
         self.add_event_key = f"-{self.content_name}-ADD-"
         self.remove_event_key = f"-{self.content_name}-REMOVE-"
@@ -86,17 +86,83 @@ class SimpleManager(Manager):
         if event == self.remove_event_key:
             self.request_remove_element(window)
 
-class AgentManager(SimpleManager):
+class AgentManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("AGENT")
 
-class ActionManager(SimpleManager):
+class ActionManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("ACTION")
 
-class StateManager(SimpleManager):
+class StateManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("STATE")
+
+class TimeManager:
+    def __init__(self):
+        self.unit_id = "-UNIT-"
+        self.step_id = "-STEP-"
+        self.termination_id = "-TERMINATION-"
+
+        self.unit = "h"
+        self.step = "1"
+        self.termination = "24"
+
+        self.display = [
+            [sg.Text("Time settings:")],
+            [sg.Text("Unit:"), sg.Text("h", key=self.unit_id), sg.Button("Edit", key=f"{self.unit_id}BUTTON-")],
+            [sg.Text("Step:"), sg.Text("1h", key=self.step_id), sg.Button("Edit", key=f"{self.step_id}BUTTON-")],
+            [sg.Text("Termination:"), sg.Text("24h", key=self.termination_id), sg.Button("Edit", key=f"{self.termination_id}BUTTON-")]
+        ]
+    
+    
+    def update(self, window):
+        window[self.unit_id].update(self.unit)
+        window[self.step_id].update(self.step + self.unit)
+        window[self.termination_id].update(self.termination + self.unit)
+    
+
+    def edit_unit(self):
+        unit = sg.popup_get_text(f"Enter new time unit", title="Edit time unit", location=DEFAULT_LOCATION)
+        if unit is None:
+            return
+        if unit == "":
+            sg.PopupError(f"Please provide new time unit", title="Edit time unit", location=DEFAULT_LOCATION)
+        self.unit = unit
+
+    def edit_step(self):
+        step = sg.popup_get_text(f"Enter new time step", title="Edit time step", location=DEFAULT_LOCATION)
+        if step is None:
+            return
+        if step == "":
+            sg.PopupError(f"Please provide new time step", title="Edit time step", location=DEFAULT_LOCATION)
+        try:
+            int(step)
+        except ValueError:
+            sg.PopupError(f"Time step must be an integer", title="Edit time step", location=DEFAULT_LOCATION)
+        self.step = step
+
+    def edit_termination(self):
+        termination = sg.popup_get_text(f"Enter new time termination", title="Edit time termination", location=DEFAULT_LOCATION)
+        if termination is None:
+            return
+        if termination == "":
+            sg.PopupError(f"Please provide new time termination", title="Edit time termination", location=DEFAULT_LOCATION)
+        try:
+            int(termination)
+        except ValueError:
+            sg.PopupError(f"Time termination must be an integer", title="Edit time termination", location=DEFAULT_LOCATION)
+        self.termination = termination
+
+    def handle_event(self, window, event, values):
+        button_event = event.replace("BUTTON-", "")
+        if button_event == self.unit_id:
+            self.edit_unit()
+        if button_event == self.step_id:
+            self.edit_step()
+        if button_event == self.termination_id:
+            self.edit_termination()
+        self.update(window)
 
 class ManagerManager():
     def __init__(self, *managers):
@@ -110,17 +176,20 @@ class ManagerManager():
 agent_manager = AgentManager()
 action_manager = ActionManager()
 state_manager = StateManager()
+time_manager = TimeManager()
 
 manager_manager = ManagerManager(
     agent_manager,
     action_manager,
-    state_manager
+    state_manager,
+    time_manager
 )
 
 layout = sg.TabGroup([[
     sg.Tab("Agents", agent_manager.display),
     sg.Tab("Actions", action_manager.display),
     sg.Tab("States", state_manager.display),
+    sg.Tab("Time", time_manager.display),
 ]])
 
 window = sg.Window('KRR', [[layout]], location=DEFAULT_LOCATION)
