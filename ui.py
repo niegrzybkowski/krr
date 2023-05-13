@@ -12,7 +12,14 @@ class CollectionManager:
         self.contents_display = sg.Text("", key=contents_display_id)
     
     def update(self, window):
-        window[self.contents_display_id].update("\n".join(self.contents))
+        window[self.contents_display_id].update(
+            "\n".join(
+                [
+                    f"{i+1:>3}. {element}"
+                    for i, element in enumerate(self.contents)
+                ]
+            )
+        )
 
     def validate_add(self, element):
         raise NotImplementedError()
@@ -34,49 +41,55 @@ class CollectionManager:
         raise NotImplementedError()
 
     def request_remove_element(self, window):
-        element = self.popup_remove()
-        if not self.validate_remove(element):
+        element_number = self.popup_remove()
+        if not self.validate_remove(element_number):
             return
-        self.contents.remove(element)
+        self.contents.pop(int(element_number)-1)
         self.update(window)
 
 class SimpleCollectionManager(CollectionManager):
     def __init__(self, content_name):
         super().__init__(f"-{content_name}-")
         self.content_name = content_name
+        self.content_name_lower = content_name.lower()
+        self.content_name_title = content_name.title()
         self.add_event_key = f"-{self.content_name}-ADD-"
         self.remove_event_key = f"-{self.content_name}-REMOVE-"
         self.display = [
-            [sg.Text(f"{self.content_name.title()}s:")],
+            [sg.Text(f"{self.content_name_title}s:", key=f"-{content_name}-HEADER-")],
             [self.contents_display],
             [sg.Button("Add", key=self.add_event_key), sg.Button("Remove", key=self.remove_event_key)]
         ]
 
     def popup_add(self):
-        return sg.popup_get_text(f"Enter new {self.content_name.lower()} name:", title=f"{self.content_name.title()} creation dialog", location=DEFAULT_LOCATION)
+        return sg.popup_get_text(f"Enter new {self.content_name_lower} name:", title=f"{self.content_name_title} creation dialog", location=DEFAULT_LOCATION)
     
     def popup_remove(self):
-        return sg.popup_get_text(f"Enter {self.content_name.lower()} name to remove:", title=f"{self.content_name.title()} deletion dialog", location=DEFAULT_LOCATION)
+        return sg.popup_get_text(f"Enter {self.content_name_lower} number to remove:", title=f"{self.content_name_title} deletion dialog", location=DEFAULT_LOCATION)
 
     def validate_add(self, element):
         if element is None:
             return False
         if element == "":
-            sg.popup_error(f"{self.content_name.title()} name cannot be empty", location=DEFAULT_LOCATION)
+            sg.popup_error(f"{self.content_name_title} name cannot be empty", location=DEFAULT_LOCATION)
             return False
         if element in self.contents:
-            sg.popup_error(f"{self.content_name.title()} with name '" + element +"' already exists",  location=DEFAULT_LOCATION)
+            sg.popup_error(f"{self.content_name_title} with name '" + element +"' already exists",  location=DEFAULT_LOCATION)
             return False
         return True
     
     def validate_remove(self, element):
         if element is None:
             return False
-        if element == "":
-            sg.popup_error(f"{self.content_name.title()} name cannot be empty", location=DEFAULT_LOCATION)
+        try:
+            element = int(element)
+        except ValueError:
+            sg.popup_error(f"Please provide {self.content_name_lower} number to remove.", location=DEFAULT_LOCATION)
             return False
-        if element not in self.contents:
-            sg.popup_error(f"{self.content_name.title()} with name '" + element +"' doesn't exist",  location=DEFAULT_LOCATION)
+        try:
+            self.contents[element-1]
+        except IndexError:
+            sg.popup_error(f"{self.content_name_title} with number {element} does not exist.", location=DEFAULT_LOCATION)
             return False
         return True
     
@@ -128,6 +141,7 @@ class TimeManager:
             return
         if unit == "":
             sg.PopupError(f"Please provide new time unit", title="Edit time unit", location=DEFAULT_LOCATION)
+            return
         self.unit = unit
 
     def edit_step(self):
@@ -136,10 +150,12 @@ class TimeManager:
             return
         if step == "":
             sg.PopupError(f"Please provide new time step", title="Edit time step", location=DEFAULT_LOCATION)
+            return
         try:
             int(step)
         except ValueError:
             sg.PopupError(f"Time step must be an integer", title="Edit time step", location=DEFAULT_LOCATION)
+            return
         self.step = step
 
     def edit_termination(self):
@@ -148,10 +164,12 @@ class TimeManager:
             return
         if termination == "":
             sg.PopupError(f"Please provide new time termination", title="Edit time termination", location=DEFAULT_LOCATION)
+            return
         try:
             int(termination)
         except ValueError:
             sg.PopupError(f"Time termination must be an integer", title="Edit time termination", location=DEFAULT_LOCATION)
+            return
         self.termination = termination
 
     def handle_event(self, window, event, values):
@@ -163,6 +181,16 @@ class TimeManager:
         if button_event == self.termination_id:
             self.edit_termination()
         self.update(window)
+
+class ACSManager(SimpleCollectionManager):
+    def __init__(self):
+        super().__init__("ACS")
+        self.content_name_lower = "ACS"
+        self.content_name_title = "ACS"
+
+    def handle_event(self, window, event, values):
+        super().handle_event(window, event, values)
+        window[f"-ACS-HEADER-"].update("ACSs:")
 
 class ManagerManager():
     def __init__(self, *managers):
@@ -177,12 +205,14 @@ agent_manager = AgentManager()
 action_manager = ActionManager()
 state_manager = StateManager()
 time_manager = TimeManager()
+acs_manager = ACSManager()
 
 manager_manager = ManagerManager(
     agent_manager,
     action_manager,
     state_manager,
-    time_manager
+    time_manager,
+    acs_manager,
 )
 
 layout = sg.TabGroup([[
@@ -190,6 +220,7 @@ layout = sg.TabGroup([[
     sg.Tab("Actions", action_manager.display),
     sg.Tab("States", state_manager.display),
     sg.Tab("Time", time_manager.display),
+    sg.Tab("ACS", acs_manager.display),
 ]])
 
 window = sg.Window('KRR', [[layout]], location=DEFAULT_LOCATION)
