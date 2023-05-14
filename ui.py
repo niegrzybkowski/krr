@@ -26,11 +26,15 @@ class CollectionManager:
     
     def popup_add(self):
         raise NotImplementedError()
-
+    
+    def preprocess_element(self, element):
+        return element
+    
     def request_new_element(self, window):
         element = self.popup_add()
         if not self.validate_add(element):
             return
+        element = self.preprocess_element(element)
         self.contents.append(element)
         self.update(window)
 
@@ -62,7 +66,7 @@ class SimpleCollectionManager(CollectionManager):
         ]
 
     def popup_add(self):
-        return sg.popup_get_text(f"Enter new {self.content_name_lower} name:", title=f"{self.content_name_title} creation dialog", location=DEFAULT_LOCATION)
+        return sg.popup_get_text(f"Enter new {self.content_name_lower}:", title=f"{self.content_name_title} creation dialog", location=DEFAULT_LOCATION)
     
     def popup_remove(self):
         return sg.popup_get_text(f"Enter {self.content_name_lower} number to remove:", title=f"{self.content_name_title} deletion dialog", location=DEFAULT_LOCATION)
@@ -74,7 +78,7 @@ class SimpleCollectionManager(CollectionManager):
             sg.popup_error(f"{self.content_name_title} name cannot be empty", location=DEFAULT_LOCATION)
             return False
         if element in self.contents:
-            sg.popup_error(f"{self.content_name_title} with name '" + element +"' already exists",  location=DEFAULT_LOCATION)
+            sg.popup_error(f"{self.content_name_title} '{element}' already exists",  location=DEFAULT_LOCATION)
             return False
         return True
     
@@ -118,21 +122,21 @@ class TimeManager:
         self.termination_id = "-TERMINATION-"
 
         self.unit = "h"
-        self.step = "1"
-        self.termination = "24"
+        self.step = 1
+        self.termination = 24
 
         self.display = [
             [sg.Text("Time settings:")],
-            [sg.Text("Unit:"), sg.Text("h", key=self.unit_id), sg.Button("Edit", key=f"{self.unit_id}BUTTON-")],
-            [sg.Text("Step:"), sg.Text("1h", key=self.step_id), sg.Button("Edit", key=f"{self.step_id}BUTTON-")],
-            [sg.Text("Termination:"), sg.Text("24h", key=self.termination_id), sg.Button("Edit", key=f"{self.termination_id}BUTTON-")]
+            [sg.Text("Unit:"), sg.Text(self.unit, key=self.unit_id), sg.Button("Edit", key=f"{self.unit_id}BUTTON-")],
+            [sg.Text("Step:"), sg.Text(f"{self.step}{self.unit}", key=self.step_id), sg.Button("Edit", key=f"{self.step_id}BUTTON-")],
+            [sg.Text("Termination:"), sg.Text(f"{self.termination}{self.unit}", key=self.termination_id), sg.Button("Edit", key=f"{self.termination_id}BUTTON-")]
         ]
     
     
     def update(self, window):
         window[self.unit_id].update(self.unit)
-        window[self.step_id].update(self.step + self.unit)
-        window[self.termination_id].update(self.termination + self.unit)
+        window[self.step_id].update(str(self.step) + self.unit)
+        window[self.termination_id].update(str(self.termination) + self.unit)
     
 
     def edit_unit(self):
@@ -152,7 +156,7 @@ class TimeManager:
             sg.PopupError(f"Please provide new time step", title="Edit time step", location=DEFAULT_LOCATION)
             return
         try:
-            int(step)
+            step = int(step)
         except ValueError:
             sg.PopupError(f"Time step must be an integer", title="Edit time step", location=DEFAULT_LOCATION)
             return
@@ -166,7 +170,7 @@ class TimeManager:
             sg.PopupError(f"Please provide new time termination", title="Edit time termination", location=DEFAULT_LOCATION)
             return
         try:
-            int(termination)
+            termination = int(termination)
         except ValueError:
             sg.PopupError(f"Time termination must be an integer", title="Edit time termination", location=DEFAULT_LOCATION)
             return
@@ -182,15 +186,74 @@ class TimeManager:
             self.edit_termination()
         self.update(window)
 
+from dataclasses import dataclass
+
+@dataclass
+class ACS:
+    action: str
+    agent: str
+    time: int
+    time_manager: any
+
+    def __str__(self):
+        return f"({self.action}, {self.agent}, {self.time}{self.time_manager.unit})"
+
+
 class ACSManager(SimpleCollectionManager):
-    def __init__(self):
+    def __init__(self, actions_manager, agent_manager, time_manager):
         super().__init__("ACS")
+        self.actions_manager = actions_manager
+        self.agent_manager = agent_manager
+        self.time_manager = time_manager
         self.content_name_lower = "ACS"
         self.content_name_title = "ACS"
+        self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
+        self.display = self.display + [[sg.Text(f"ACS are comma separated 3-tuples. Outer brackets and quotation marks are optional.")]]
+    
+    def remove_fluff(self, element):
+        element = element.replace("(" , "")
+        element = element.replace(")" , "")
+        element = element.replace("\"", "")
+        element = element.replace("'" , "")
+        return element
 
-    def handle_event(self, window, event, values):
-        super().handle_event(window, event, values)
-        window[f"-ACS-HEADER-"].update("ACSs:")
+    def validate_add(self, element):
+        if element is None:
+            return False
+        element = self.remove_fluff(element)
+        try:
+            action, agent, time = element.split(",")
+            agent = agent.strip()
+            action = action.strip()
+        except ValueError:
+            sg.popup_error("Please provide a tuple of 3 values separated by commas", location=DEFAULT_LOCATION)
+            return False
+        
+        if action not in self.actions_manager.contents:
+            sg.popup_error(f"Action '{action}' does not exist.", location=DEFAULT_LOCATION)
+            return False
+        if agent not in self.agent_manager.contents:
+            sg.popup_error(f"Agent '{agent}' does not exist.", location=DEFAULT_LOCATION)
+            return False
+        try:
+            time = time.replace(self.time_manager.unit, "")
+            time = int(time)
+        except ValueError:
+            sg.popup_error("Time needs to be an integer", location=DEFAULT_LOCATION)
+            return False
+        if time % self.time_manager.step != 0:
+            sg.popup_error("Time needs to be a multiple of the time step", location=DEFAULT_LOCATION)
+            return False
+        if time > self.time_manager.termination:
+            sg.popup_error("Time needs to be before termination", location=DEFAULT_LOCATION)
+            return False
+        element_dataclass = ACS(action, agent, time, self.time_manager)
+        if not super().validate_add(element_dataclass):
+            return False
+        return element_dataclass
+
+    def preprocess_element(self, element):
+        return self.validate_add(element) # jank
 
 class ManagerManager():
     def __init__(self, *managers):
@@ -205,7 +268,7 @@ agent_manager = AgentManager()
 action_manager = ActionManager()
 state_manager = StateManager()
 time_manager = TimeManager()
-acs_manager = ACSManager()
+acs_manager = ACSManager(action_manager, agent_manager, time_manager)
 
 manager_manager = ManagerManager(
     agent_manager,
