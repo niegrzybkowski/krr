@@ -260,16 +260,19 @@ class ACSManager(SimpleCollectionManager):
             self.update(window)
         return super().handle_event(window, event, values)
 
-def parse_logic(expression, states):
-    if len(states) == 0:
-        sg.popup_error("At least one state is required to create a logic expression", location=DEFAULT_LOCATION)
-        return False
-    quoted_literal = "'" + pp.Literal(states[0]) + "'" | "\"" + pp.Literal(states[0]) + "\""
-    quoted_literal.set_parse_action(lambda toks: toks[1])
+def create_literal_parser(literals):
+    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
+    literal_parser = pp.Literal(literals[0]) | quoted_literal
+    for state in literals[1:]:
+        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
+        literal_parser |= pp.Literal(state) | quoted_literal
+    return literal_parser
+
+def create_logic_parser(states):
+    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
     states_parser = pp.Literal(states[0]) | quoted_literal
     for state in states[1:]:
-        quoted_literal = "'" + pp.Literal(state) + "'" | "\"" + pp.Literal(state) + "\""
-        quoted_literal.set_parse_action(lambda toks: toks[1])
+        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
         states_parser |= pp.Literal(state) | quoted_literal
     
     logic_expr = pp.infix_notation(
@@ -282,6 +285,13 @@ def parse_logic(expression, states):
             ("if and only if", 2, pp.OpAssoc.LEFT),
         ]
     )
+    return logic_expr
+
+def parse_logic(expression, states):
+    if len(states) == 0:
+        sg.popup_error("At least one fluent is required to create a logic expression", location=DEFAULT_LOCATION)
+        return False
+    logic_expr = create_logic_parser(states)
     try:
         # print(states, logic_expr, expression)
         parsed_expression = logic_expr.parse_string(expression, parse_all=True).as_list()
@@ -292,22 +302,37 @@ def parse_logic(expression, states):
     return parsed_expression
 
 @dataclass
-class OBS:
+class LogicExpression:
     expression: str
-    time: int
-    state_manager: any
-    time_manager: any
     parsed_expression: any = None
-    
-    def parse(self):
-        states = self.state_manager.contents
+
+    def parse(self, state_manager):
+        states = state_manager.contents
         parse_result = parse_logic(self.expression, states)
         if parse_result:
             self.parsed_expression = parse_result
             return True
         else:
             return False
+
+@dataclass
+class OBS:
+    expression: str
+    time: int
+    state_manager: any
+    time_manager: any
+    logic_expression: LogicExpression = None
     
+    def parse(self):
+        self.logic_expression = LogicExpression(self.expression)
+        return self.logic_expression.parse(self.state_manager)
+
+    def data(self):
+        return {
+            "logic_expression": self.logic_expression,
+            "time": self.time
+        }
+
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, OBS):
             return False
@@ -315,7 +340,7 @@ class OBS:
             return True
         if self.state_manager != __value.state_manager:
             return False
-        if str(self.parsed_expression) != str(__value.parsed_expression):
+        if str(self.logic_expression.parsed_expression) != str(__value.logic_expression.parsed_expression):
             return False
         return True
     
@@ -331,7 +356,7 @@ class OBSManager(SimpleCollectionManager):
         self.content_name_title = "OBS"
         self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
         self.display = self.display + [[sg.Text(f"OBS are comma separated 2-tuples. Outer brackets and quotation marks are optional.\n" +
-                                                 "Parsing of logic expressions require states to be defined beforehand.")]]
+                                                 "Parsing of logic expressions require fluents to be defined beforehand.")]]
     
     def remove_fluff(self, element):
         if element[-1] == ")":
@@ -375,6 +400,108 @@ class OBSManager(SimpleCollectionManager):
             self.update(window)
         return super().handle_event(window, event, values)
 
+@dataclass
+class Statement:
+    original_expression: str
+    action_manager: ActionManager
+    agent_manager: AgentManager
+    state_manager: StateManager
+    action: str = None
+    agent: str = None
+    statement_type: str = None
+    effects: any = None # [["state1"], ["not", "state2"]]
+    condition: any = None # infix representation
+    
+    def validate_at_least_one_of_each(self):
+        if len(self.action_manager.contents) == 0:
+            sg.popup_error("At least one action is required to create a statement", location=DEFAULT_LOCATION)
+            return False
+        if len(self.state_manager.contents) == 0:
+            sg.popup_error("At least one fluent is required to create a statement", location=DEFAULT_LOCATION)
+            return False
+        return True
+
+
+    def parse(self):
+        if not self.validate_at_least_one_of_each():
+            return False
+
+        action_parser = create_literal_parser(self.action_manager.contents)
+
+        if len(self.agent_manager.contents) == 0: 
+            # agent count CAN be 0, statements like "shoot causes not gun loaded"
+            agent_parser = pp.Empty()
+            agent_parser.set_parse_action(lambda: [None])
+        else:
+            agent_parser = create_literal_parser(self.agent_manager.contents)
+            agent_parser = pp.Opt(pp.Suppress("by") + agent_parser, default=None)
+
+        statement_type_parser = pp.Literal("releases") | pp.Literal("causes")
+
+        state_parser = create_literal_parser(self.state_manager.contents)
+        
+        effect_parser = pp.delimitedList(pp.Opt("not") + state_parser, delim="and")
+        effect_parser.set_parse_action(lambda toks: [toks])
+
+        logic_condition = create_logic_parser(self.state_manager.contents)
+        logic_parser = pp.Opt(pp.Suppress("if") + logic_condition, default=None)
+
+        parser = action_parser + agent_parser + statement_type_parser + effect_parser + logic_parser
+        try:
+            parsed_expression = parser.parse_string(self.original_expression, parse_all=True).as_list()
+        except pp.exceptions.ParseException as e:
+            sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
+            return False
+        self.action, self.agent, self.statement_type, self.effects, self.condition = parsed_expression
+        return parsed_expression
+    
+    def data(self):
+        return {
+            "original_expression": self.original_expression,
+            "action": self.action,
+            "agent": self.agent,
+            "statement_type": self.statement_type,
+            "effects": self.effects,
+            "condition": self.condition,
+        }
+
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, Statement):
+            return False
+        if self is __value:
+            return True
+        self_data = self.data()
+        self_data["original_expression"] = None
+        o_data = __value.data()
+        o_data["original_expression"] = None
+        if self_data != o_data:
+            return False
+        return True
+    
+    def __str__(self):
+        return self.original_expression
+
+class StatementManager(SimpleCollectionManager):
+    def __init__(self, action_manager, agent_manager, state_manager):
+        super().__init__("STATEMENT")
+        self.action_manager = action_manager
+        self.agent_manager = agent_manager
+        self.state_manager = state_manager
+        self.display = self.display + [[sg.Text(f"Parsing of statements expressions requires at least one action and fluent to be defined beforehand.")]]
+
+    def validate_add(self, element):
+        if element is None:
+            return False
+        element_dataclass = Statement(element, self.action_manager, self.agent_manager, self.state_manager)
+        if not element_dataclass.parse():
+            return False
+        if not super().validate_add(element_dataclass):
+            return False
+        return element_dataclass
+
+    def preprocess_element(self, element):
+        return self.validate_add(element) # jank
+
 class ManagerManager():
     def __init__(self, *managers):
         self.managers = managers
@@ -390,6 +517,7 @@ state_manager = StateManager()
 time_manager = TimeManager()
 acs_manager = ACSManager(action_manager, agent_manager, time_manager)
 obs_manager = OBSManager(state_manager, time_manager)
+statement_manager = StatementManager(action_manager, agent_manager, state_manager)
 
 manager_manager = ManagerManager(
     agent_manager,
@@ -398,15 +526,17 @@ manager_manager = ManagerManager(
     time_manager,
     acs_manager,
     obs_manager,
+    statement_manager,
 )
 
 layout = sg.TabGroup([[
     sg.Tab("Agents", agent_manager.display),
     sg.Tab("Actions", action_manager.display),
-    sg.Tab("States", state_manager.display),
+    sg.Tab("Fluents", state_manager.display),
     sg.Tab("Time", time_manager.display),
     sg.Tab("ACS", acs_manager.display),
     sg.Tab("OBS", obs_manager.display),
+    sg.Tab("Statements", statement_manager.display),
 ]])
 
 window = sg.Window('KRR', [[layout]], location=DEFAULT_LOCATION)
