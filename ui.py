@@ -1,5 +1,7 @@
 import PySimpleGUI as sg
 import pyparsing as pp
+from dataclasses import dataclass
+import json
 
 sg.theme('dark grey 9')   
 
@@ -103,6 +105,15 @@ class SimpleCollectionManager(CollectionManager):
         if event == self.remove_event_key:
             self.request_remove_element(window)
 
+    def data(self):
+        return [
+            el.data() if not isinstance(el, str) else el
+            for el in self.contents
+        ]
+    
+    def set_data(self, data):
+        self.contents = data
+
 class AgentManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("AGENT")
@@ -117,6 +128,7 @@ class StateManager(SimpleCollectionManager):
 
 class TimeManager:
     def __init__(self):
+        self.content_name = "TIME"
         self.unit_id = "-UNIT-"
         self.step_id = "-STEP-"
         self.termination_id = "-TERMINATION-"
@@ -186,7 +198,17 @@ class TimeManager:
             self.edit_termination()
         self.update(window)
 
-from dataclasses import dataclass
+    def data(self):
+        return {
+            "unit": self.unit,
+            "step": self.step,
+            "termination": self.termination,
+        }
+
+    def set_data(self, data):
+        self.unit = data["unit"]
+        self.step = data["step"]
+        self.termination = data["termination"]
 
 @dataclass
 class ACS:
@@ -510,46 +532,87 @@ class ManagerManager():
         for manager in self.managers:
             manager.handle_event(window, event, values)
 
+    def data(self):
+        return {
+            manager.content_name: manager.data()
+            for manager in self.managers
+        }
 
-agent_manager = AgentManager()
-action_manager = ActionManager()
-state_manager = StateManager()
-time_manager = TimeManager()
-acs_manager = ACSManager(action_manager, agent_manager, time_manager)
-obs_manager = OBSManager(state_manager, time_manager)
-statement_manager = StatementManager(action_manager, agent_manager, state_manager)
+    def set_data(self, data):
+        for key, value in data.items():
+            for manager in self.managers:
+                if key == manager.content_name:
+                    manager.set_data(value)
 
-manager_manager = ManagerManager(
-    agent_manager,
-    action_manager,
-    state_manager,
-    time_manager,
-    acs_manager,
-    obs_manager,
-    statement_manager,
-)
+    def update_all(self, window):
+        for manager in self.managers:
+            manager.update(window)
 
-layout = sg.TabGroup([[
-    sg.Tab("Agents", agent_manager.display),
-    sg.Tab("Actions", action_manager.display),
-    sg.Tab("Fluents", state_manager.display),
-    sg.Tab("Time", time_manager.display),
-    sg.Tab("ACS", acs_manager.display),
-    sg.Tab("OBS", obs_manager.display),
-    sg.Tab("Statements", statement_manager.display),
-]])
+def main():
+    agent_manager = AgentManager()
+    action_manager = ActionManager()
+    state_manager = StateManager()
+    time_manager = TimeManager()
+    acs_manager = ACSManager(action_manager, agent_manager, time_manager)
+    obs_manager = OBSManager(state_manager, time_manager)
+    statement_manager = StatementManager(action_manager, agent_manager, state_manager)
 
-window = sg.Window('KRR', [[layout]], location=DEFAULT_LOCATION)
+    manager_manager = ManagerManager(
+        agent_manager,
+        action_manager,
+        state_manager,
+        time_manager,
+        acs_manager,
+        obs_manager,
+        statement_manager,
+    )
 
+    serdelizer_layout = [
+        [sg.Multiline("", key="-SERDE-IO-", size=(100, 30))],
+        [sg.Text("Press serialize to dump application state")],
+        [sg.Button("Serialize"), sg.Button("Deserialize")]
+    ]
 
-try:
-    while True:
-        event, values = window.read()
-        if event == sg.WIN_CLOSED:
-            break
-        
-        print(event, values)
-        manager_manager.handle_event(window, event, values)
+    layout = [[ sg.TabGroup([[
+        sg.Tab("Agents", agent_manager.display),
+        sg.Tab("Actions", action_manager.display),
+        sg.Tab("Fluents", state_manager.display),
+        sg.Tab("Time", time_manager.display),
+        sg.Tab("ACS", acs_manager.display),
+        sg.Tab("OBS", obs_manager.display),
+        sg.Tab("Statements", statement_manager.display),
+        sg.Tab("Save", serdelizer_layout)
+    ]], size=(600, 480)) ]]
+
+    window = sg.Window('KRR', layout, location=DEFAULT_LOCATION)
+
+    restart = False
+    try:
+        while True:
+            event, values = window.read()
+            if event == sg.WIN_CLOSED:
+                break
             
-finally:
-    window.close()
+            print(event, values)
+            manager_manager.handle_event(window, event, values)
+
+            if event == "Serialize":
+                data = manager_manager.data()
+                window["-SERDE-IO-"].update(json.dumps(data, indent=2))
+            if event == "Deserialize":
+                data = values["-SERDE-IO-"]
+                try:
+                    data = json.loads(data)
+                except Exception:
+                    sg.popup_error("Unable to parse serialized application data.", location=DEFAULT_LOCATION)
+                    continue
+                manager_manager.set_data(data)
+                manager_manager.update_all(window)
+
+    finally:
+        window.close()
+    if restart:
+        main()
+
+if __name__ == "__main__":
+    main()
