@@ -1,5 +1,5 @@
 import PySimpleGUI as sg
-
+import pyparsing as pp
 
 sg.theme('dark grey 9')   
 
@@ -254,6 +254,126 @@ class ACSManager(SimpleCollectionManager):
 
     def preprocess_element(self, element):
         return self.validate_add(element) # jank
+    
+    def handle_event(self, window, event, values):
+        if "TIME" in event:
+            self.update(window)
+        return super().handle_event(window, event, values)
+
+def parse_logic(expression, states):
+    if len(states) == 0:
+        sg.popup_error("At least one state is required to create a logic expression", location=DEFAULT_LOCATION)
+        return False
+    quoted_literal = "'" + pp.Literal(states[0]) + "'" | "\"" + pp.Literal(states[0]) + "\""
+    quoted_literal.set_parse_action(lambda toks: toks[1])
+    states_parser = pp.Literal(states[0]) | quoted_literal
+    for state in states[1:]:
+        quoted_literal = "'" + pp.Literal(state) + "'" | "\"" + pp.Literal(state) + "\""
+        quoted_literal.set_parse_action(lambda toks: toks[1])
+        states_parser |= pp.Literal(state) | quoted_literal
+    
+    logic_expr = pp.infix_notation(
+        states_parser,
+        [
+            ("not", 1, pp.OpAssoc.RIGHT),
+            ("and", 2, pp.OpAssoc.LEFT),
+            ("or", 2, pp.OpAssoc.LEFT),
+            ("implies", 2, pp.OpAssoc.LEFT),
+            ("if and only if", 2, pp.OpAssoc.LEFT),
+        ]
+    )
+    try:
+        # print(states, logic_expr, expression)
+        parsed_expression = logic_expr.parse_string(expression, parse_all=True).as_list()
+    except pp.exceptions.ParseException as e:
+        sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
+        return False
+    # print(parsed_expression)
+    return parsed_expression
+
+@dataclass
+class OBS:
+    expression: str
+    time: int
+    state_manager: any
+    time_manager: any
+    parsed_expression: any = None
+    
+    def parse(self):
+        states = self.state_manager.contents
+        parse_result = parse_logic(self.expression, states)
+        if parse_result:
+            self.parsed_expression = parse_result
+            return True
+        else:
+            return False
+    
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, OBS):
+            return False
+        if self is __value:
+            return True
+        if self.state_manager != __value.state_manager:
+            return False
+        if str(self.parsed_expression) != str(__value.parsed_expression):
+            return False
+        return True
+    
+    def __str__(self):
+        return f"({self.expression}, {self.time}{self.time_manager.unit})"
+
+class OBSManager(SimpleCollectionManager):
+    def __init__(self, state_manager, time_manager):
+        super().__init__("OBS")
+        self.state_manager = state_manager
+        self.time_manager = time_manager
+        self.content_name_lower = "OBS"
+        self.content_name_title = "OBS"
+        self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
+        self.display = self.display + [[sg.Text(f"OBS are comma separated 2-tuples. Outer brackets and quotation marks are optional.\n" +
+                                                 "Parsing of logic expressions require states to be defined beforehand.")]]
+    
+    def remove_fluff(self, element):
+        if element[-1] == ")":
+            element = element[1:]
+            element = element[:-1]
+        return element
+
+    def validate_add(self, element):
+        if element is None:
+            return False
+        element = self.remove_fluff(element)
+        try:
+            expression, time = element.split(",")
+        except ValueError:
+            sg.popup_error("Please provide a tuple of 2 values separated by commas", location=DEFAULT_LOCATION)
+            return False
+        try:
+            time = time.replace(self.time_manager.unit, "")
+            time = int(time)
+        except ValueError:
+            sg.popup_error("Time needs to be an integer", location=DEFAULT_LOCATION)
+            return False
+        if time % self.time_manager.step != 0:
+            sg.popup_error("Time needs to be a multiple of the time step", location=DEFAULT_LOCATION)
+            return False
+        if time > self.time_manager.termination:
+            sg.popup_error("Time needs to be before termination", location=DEFAULT_LOCATION)
+            return False
+        element_dataclass = OBS(expression, time, self.state_manager, self.time_manager)
+        if not element_dataclass.parse():
+            return False
+        if not super().validate_add(element_dataclass):
+            return False
+        return element_dataclass
+
+    def preprocess_element(self, element):
+        return self.validate_add(element) # jank
+    
+    def handle_event(self, window, event, values):
+        if "TIME" in event:
+            self.update(window)
+        return super().handle_event(window, event, values)
 
 class ManagerManager():
     def __init__(self, *managers):
@@ -269,6 +389,7 @@ action_manager = ActionManager()
 state_manager = StateManager()
 time_manager = TimeManager()
 acs_manager = ACSManager(action_manager, agent_manager, time_manager)
+obs_manager = OBSManager(state_manager, time_manager)
 
 manager_manager = ManagerManager(
     agent_manager,
@@ -276,6 +397,7 @@ manager_manager = ManagerManager(
     state_manager,
     time_manager,
     acs_manager,
+    obs_manager,
 )
 
 layout = sg.TabGroup([[
@@ -284,6 +406,7 @@ layout = sg.TabGroup([[
     sg.Tab("States", state_manager.display),
     sg.Tab("Time", time_manager.display),
     sg.Tab("ACS", acs_manager.display),
+    sg.Tab("OBS", obs_manager.display),
 ]])
 
 window = sg.Window('KRR', [[layout]], location=DEFAULT_LOCATION)
