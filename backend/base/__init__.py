@@ -1,20 +1,23 @@
-# from .Action import Action,
-# from .Agent import Agent,
-# from .Formula import Formula, Operator,
-# from .State import State,
-# from .Statement import Statement, ReleaseStatement, EffectStatement,
-# from .Scenario import TimePoint, Scenario,
-# from .Query import ActionQuery, FluentQuery, AgentQuery,
-from .elements import Action,\
-    Agent, \
-    Formula, \
-    Operator, \
-    State, \
-    Statement, \
-    ReleaseStatement, \
-    EffectStatement, \
-    TimePoint, \
-    Scenario, \
-    ActionQuery, \
-    FluentQuery, \
-    AgentQuery
+from __future__ import annotations
+
+from .agent import Agent
+from .state import State
+from .formula import Formula, Operator
+from .statement import Statement, ReleaseStatement, EffectStatement
+from .timepoint import TimePoint, Obs
+from .scenario import Scenario
+from .action import Action
+from .query import ActionQuery, FluentQuery, AgentQuery
+# from .elements import Action,\
+#     Agent, \
+#     Formula, \
+#     Operator, \
+#     State, \
+#     Statement, \
+#     ReleaseStatement, \
+#     EffectStatement, \
+#     TimePoint, \
+#     Scenario, \
+#     ActionQuery, \
+#     FluentQuery, \
+#     AgentQuery
