@@ -16,8 +16,8 @@ class Obs:
     def __ior__(self, other) -> None:
         """validation state unique by name and holds
 
-        ---------------------------------------------
         Example:
+        ---------------------------------------------
         >>> self |= other
         """
 

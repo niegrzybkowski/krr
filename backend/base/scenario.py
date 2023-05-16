@@ -2,9 +2,13 @@ from dataclasses import dataclass, field
 
 from sortedcontainers import SortedDict
 
-from . import Statement, TimePoint
+from . import Statement, TimePoint, Obs
 
-from typing import List
+from typing import List, Optional
+
+
+class ObsMissingException(Exception):
+    pass
 
 
 @dataclass(slots=True)
@@ -24,6 +28,18 @@ class Scenario:
 
     def is_realisable(self) -> bool:
         return True
+
+    def get_first_obs(self, quiet=False) -> Optional[Obs]:
+        try:
+            k = list(self.timepoints.keys())[0]
+            if not self.timepoints[k].is_obs():
+                raise ObsMissingException()
+            return self.timepoints[k].obs
+        except (IndexError, ObsMissingException) as e:
+            if not quiet:
+                raise ObsMissingException('OBS must be defined before any action can be performed (ACS).')
+            else:
+                return None
 
     def __len__(self):
         return len(self.timepoints)

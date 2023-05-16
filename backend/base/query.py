@@ -35,12 +35,61 @@ class ActionQuery(Query):
 
 @dataclass(slots=True)
 class FluentQuery(Query):
-    fluent: State
-    type: str  # always/ever || necessary/possible
+    fluent: State  # TODO: confirm whether fluent can be formula
+    timepoint: int
+    mode: str  # 'necessary', 'possibly'
 
-    @abstractmethod
+    def __post_init__(self):
+        mode = self.mode.lower()
+
+        if mode not in ['necessary', 'possibly']:
+            raise ValueError(
+                "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
+
     def run(self) -> str:
-        pass
+        # super().is_valid()
+
+        cur_obs = [self.scenario.get_first_obs()]
+        if self.timepoint > self.termination:
+            return "It is impossible to determine since considered " \
+                  f"timepoint is greater than termination ({self.timepoint} > {self.termination})"
+
+        for t, timepoint in self.scenario.timepoints.items():
+            if not timepoint.is_acs():
+                continue
+            if t >= self.timepoint:
+                break
+
+            action, agent = timepoint.acs
+
+            statements: List[Statement] = get_statements(
+                action, agent, self.scenario.statements)
+
+            cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
+            flatten = flatten_list(cur_obs)
+            cur_obs = eliminate_duplicates(flatten)
+
+
+        def __getStatesByName(_list: List[Obs], _state: State) -> List[State]:
+            res = []
+            for el in _list:
+                __state: State = next(
+                    filter(lambda item: item.name == _state.name, el), None)
+                if __state is None:
+                    raise Exception(f'State {_state.name} was not found in OBS')
+                res.append(__state)
+            return res
+
+        cur_states = __getStatesByName(cur_obs, self.fluent)
+
+        if self.mode == 'necessary':
+            if all(cur_states):
+                return f"Fluent {self.fluent.name} always holds at t={self.timepoint}"
+            return f"Fluent {self.fluent.name} doesn't always hold at t={self.timepoint}"
+        # 'possibly':
+        if any(cur_states):
+            return f"Fluent {self.fluent.name} sometimes holds at t={self.timepoint}"
+        return f"Fluent {self.fluent.name} never holds at t={self.timepoint}"
 
 
 def get_statements(action, agent, statements) -> List[Statement]:
@@ -71,7 +120,7 @@ class AgentQuery(Query):
         # super().is_valid()
 
         is_active = False
-        cur_obs = [self.scenario.timepoints[list(self.scenario.timepoints.keys())[0]].obs]
+        cur_obs = [self.scenario.get_first_obs()]
 
         for t, timepoint in self.scenario.timepoints.items():
             if not timepoint.is_acs():

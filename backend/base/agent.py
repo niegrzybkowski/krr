@@ -9,3 +9,6 @@ class Agent:
 
     def __bool__(self):
         return self.active
+
+    def __eq__(self, other) -> bool:
+        return self.name == other.name
