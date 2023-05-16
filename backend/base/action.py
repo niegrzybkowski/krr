@@ -10,6 +10,7 @@ from . import agent as ag, timepoint as tp, statement as st
 @dataclass(slots=True)
 class Action:
     name: str
+    performed: bool = False
 
     def run(
             self, agent: ag.Agent, obs: tp.Obs, statements: List[st.Statement]
@@ -19,11 +20,13 @@ class Action:
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition:
                 agent.active = True
+                self.performed = True
                 postconditions[0].extend(copy(_statement.postcondition))
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
             if _statement.precondition:
                 agent.active = True
+                self.performed = True
 
                 psc = []
                 psc2 = []
@@ -45,3 +48,8 @@ class Action:
 
         return new_obs
 
+    def __eq__(self, other: Action) -> bool:
+        return self.name == other.name
+
+    def __bool__(self) -> bool:
+        return self.performed

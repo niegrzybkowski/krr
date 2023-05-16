@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
-from . import State, Scenario, Agent, Statement, Obs
+from . import State, Scenario, Agent, Statement, Obs, Action
 
 
 @dataclass(slots=True)
@@ -24,18 +24,41 @@ class Query(ABC):
 
 @dataclass(slots=True)
 class ActionQuery(Query):
+    action: Action
 
-    @abstractmethod
     def run(self) -> str:
-        pass
+        # super().is_valid()
+        is_performed = False
+        cur_obs = [self.scenario.get_first_obs()]
 
-    def is_valid(self):
-        super().is_valid()
+        for t, timepoint in self.scenario.timepoints.items():
+            if not timepoint.is_acs():
+                continue
+            if t > self.termination:
+                break
+
+            action, agent = timepoint.acs
+
+            statements: List[Statement] = get_statements(action, agent, self.scenario.statements)
+
+            cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
+            flatten = flatten_list(cur_obs)
+            cur_obs = eliminate_duplicates(flatten)
+
+            if action == self.action:
+                is_performed = bool(self.action)
+            if is_performed:
+                break
+
+        if is_performed:
+            return f"Action {self.action.name} is performed in this Scenario"
+
+        return f"Action {self.action.name} is performed in this Scenario"
 
 
 @dataclass(slots=True)
 class FluentQuery(Query):
-    fluent: State  # TODO: confirm whether fluent can be formula
+    fluent: State  # TODO: confirm whether fluent can be formula - PM it don't think so
     timepoint: int
     mode: str  # 'necessary', 'possibly'
 
@@ -52,7 +75,7 @@ class FluentQuery(Query):
         cur_obs = [self.scenario.get_first_obs()]
         if self.timepoint > self.termination:
             return "It is impossible to determine since considered " \
-                  f"timepoint is greater than termination ({self.timepoint} > {self.termination})"
+                   f"timepoint is greater than termination ({self.timepoint} > {self.termination})"
 
         for t, timepoint in self.scenario.timepoints.items():
             if not timepoint.is_acs():
@@ -68,7 +91,6 @@ class FluentQuery(Query):
             cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
             flatten = flatten_list(cur_obs)
             cur_obs = eliminate_duplicates(flatten)
-
 
         def __getStatesByName(_list: List[Obs], _state: State) -> List[State]:
             res = []
