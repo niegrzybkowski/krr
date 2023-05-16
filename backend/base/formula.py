@@ -43,7 +43,7 @@ map_methods = {
 
 @dataclass(slots=True)
 class Formula:
-    structure: List[Union[str, Operator]] = field(default_factory=list)
+    structure: List[Union[str, State]] = field(default_factory=list)
 
     @classmethod
     def from_text(cls, text: str):
