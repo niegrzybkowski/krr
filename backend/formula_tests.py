@@ -3,6 +3,17 @@ from base import Formula, State, Operator
 
 
 class FormulaTestCase(unittest.TestCase):
+
+    def test_given_fluent_when_bool_then_false(self):
+        # given
+        formula = Formula([
+            State("a", holds=False)
+        ])
+        # when
+        ans = bool(formula)
+        # then
+        self.assertFalse(ans)
+
     def test_given_not_fluent_when_bool_then_true(self):
         # given
         formula = Formula([

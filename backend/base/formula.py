@@ -66,6 +66,9 @@ class Formula:
                     last_state = el
                 else:
                     operator = map_methods[el]
-            return operator(last_state)
+
+            if operator is not None:
+                return operator(last_state)
+            return bool(last_state)
 
         return _traverse(self.structure)
