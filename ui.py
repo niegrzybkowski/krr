@@ -288,6 +288,9 @@ class ACSManager(SimpleCollectionManager):
         if "TIME" in event:
             self.update(window)
         return super().handle_event(window, event, values)
+    
+    def set_data(self, data):
+        self.contents = [ACS(time_manager=self.time_manager, **data_item) for data_item in data]
 
 def create_literal_parser(literals):
     quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
@@ -346,14 +349,20 @@ class LogicExpression:
 
 @dataclass
 class OBS:
-    expression: str
+    original_expression: str
     time: int
     state_manager: any
     time_manager: any
     logic_expression: LogicExpression = None
+    parsed_expression: any = None
+
+    def __post_init__(self):
+        if self.parsed_expression is not None:
+            self.logic_expression = LogicExpression(self.original_expression)
+            self.logic_expression.parsed_expression = self.parsed_expression
     
     def parse(self):
-        self.logic_expression = LogicExpression(self.expression)
+        self.logic_expression = LogicExpression(self.original_expression)
         return self.logic_expression.parse(self.state_manager)
 
     def data(self):
@@ -375,7 +384,7 @@ class OBS:
         return True
     
     def __str__(self):
-        return f"({self.expression}, {self.time}{self.time_manager.unit})"
+        return f"({self.original_expression}, {self.time}{self.time_manager.unit})"
 
 class OBSManager(SimpleCollectionManager):
     def __init__(self, state_manager, time_manager):
@@ -429,6 +438,9 @@ class OBSManager(SimpleCollectionManager):
         if "TIME" in event:
             self.update(window)
         return super().handle_event(window, event, values)
+
+    def set_data(self, data):
+        self.contents = [OBS(state_manager=self.state_manager, time_manager=self.time_manager, **data_item) for data_item in data]
 
 @dataclass
 class Statement:
@@ -531,6 +543,17 @@ class StatementManager(SimpleCollectionManager):
 
     def preprocess_element(self, element):
         return self.validate_add(element) # jank
+    
+    def set_data(self, data):
+        self.contents = [
+            Statement(
+                action_manager=self.action_manager,
+                agent_manager=self.agent_manager,
+                state_manager=self.state_manager,
+                **data_item
+            ) 
+            for data_item in data
+        ]
 
 class ManagerManager():
     def __init__(self, *managers):
