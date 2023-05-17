@@ -2,6 +2,7 @@ from dataclasses import field, dataclass
 from typing import Union, List
 
 from . import State
+from ..exceptions import BackendExpection
 
 
 class Operator:
@@ -36,7 +37,7 @@ class Operator:
     @staticmethod
     def get(name: str):
         if name not in Operator.map_methods:
-            raise Exception("Bad name of the method")
+            raise BackendExpection("Bad name of the method")
         return Operator.map_methods[name]
 
 

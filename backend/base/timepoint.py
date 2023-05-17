@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, List
 
 from . import action, agent, state
+from ..exceptions import LogicExpection
 
 
 @dataclass
@@ -24,7 +25,7 @@ class Obs:
         update_tuples_nh = set(map(lambda x: (x.name, x.holds), other))
         update_tuples_n = set(map(lambda x: (x.name,), other))
         if len(update_tuples_nh) != len(update_tuples_n):
-            raise Exception('Scenario is not realizable - statement contains disjoint statements')
+            raise LogicExpection('Scenario is not realizable - statement contains disjoint statements')
 
         _update = [state.State(name=name, holds=holds) for name, holds in update_tuples_nh]
 

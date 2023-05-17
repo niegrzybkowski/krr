@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 from . import State, Scenario, Agent, Statement, Obs, Action
+from ..exceptions import LogicExpection
 
 
 @dataclass(slots=True)
@@ -17,7 +18,7 @@ class Query(ABC):
         pass
 
     def is_valid(self) -> None:
-        # raise Exception("...")
+        # raise LogicException("...")
         # obs must be defined for smallest timepoint in scenario
         pass
 
@@ -66,7 +67,7 @@ class FluentQuery(Query):
         mode = self.mode.lower()
 
         if mode not in ['necessary', 'possibly']:
-            raise ValueError(
+            raise LogicExpection(
                 "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
 
     def run(self) -> str:
@@ -98,7 +99,7 @@ class FluentQuery(Query):
                 __state: State = next(
                     filter(lambda item: item.name == _state.name, el), None)
                 if __state is None:
-                    raise Exception(f'State {_state.name} was not found in OBS')
+                    raise LogicExpection(f'State {_state.name} was not found in OBS')
                 res.append(__state)
             return res
 

@@ -3,12 +3,9 @@ from dataclasses import dataclass, field
 from sortedcontainers import SortedDict
 
 from . import Statement, TimePoint, Obs
+from ..exceptions import LogicExpection
 
 from typing import List, Optional
-
-
-class ObsMissingException(Exception):
-    pass
 
 
 @dataclass(slots=True)
@@ -20,7 +17,7 @@ class Scenario:
     def from_timepoints(cls, timepoints: List[TimePoint], statements: List[Statement]):
         unique_timepoints = set(map(lambda x: x.t, timepoints))
         if len(unique_timepoints) != len(timepoints):
-            raise Exception("Only one definition for single time point can exist")
+            raise LogicExpection("Only one definition for single time point can exist")
         return cls(timepoints=SortedDict({timepoint.t: timepoint for timepoint in timepoints}), statements=statements)
 
     def exist_timepoint(self, t: int) -> bool:
@@ -33,11 +30,11 @@ class Scenario:
         try:
             k = list(self.timepoints.keys())[0]
             if not self.timepoints[k].is_obs():
-                raise ObsMissingException()
+                raise LogicExpection()
             return self.timepoints[k].obs
-        except (IndexError, ObsMissingException) as e:
+        except (IndexError, LogicExpection) as e:
             if not quiet:
-                raise ObsMissingException('OBS must be defined before any action can be performed (ACS).')
+                raise LogicExpection('OBS must be defined before any action can be performed (ACS).')
             else:
                 return None
 
