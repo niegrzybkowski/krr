@@ -634,11 +634,18 @@ def main():
                 data = values["-SERDE-IO-"]
                 try:
                     data = json.loads(data)
-                except Exception:
-                    sg.popup_error("Unable to parse serialized application data.", location=DEFAULT_LOCATION)
+                except json.JSONDecodeError as e:
+                    sg.popup_error("Unable to parse JSON application data.\nParser message: "+str(e), location=DEFAULT_LOCATION)
                     continue
-                manager_manager.set_data(data)
-                manager_manager.update_all(window)
+                backup = manager_manager.data()
+                try:
+                    manager_manager.set_data(data)
+                    manager_manager.update_all(window)
+                except:
+                    import traceback
+                    sg.popup_error("Unable to load application data.", location=DEFAULT_LOCATION)
+                    print(traceback.format_exc())
+                    manager_manager.set_data(backup)
 
     finally:
         window.close()
