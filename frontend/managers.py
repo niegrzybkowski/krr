@@ -1,11 +1,8 @@
 import PySimpleGUI as sg
-import pyparsing as pp
-from dataclasses import dataclass
-import json
+from frontend.utils import get_default_location, create_literal_parser, create_logic_parser
+from frontend.data import ACS, OBS, Statement
 
-sg.theme('dark grey 9')   
-
-DEFAULT_LOCATION = (100,100)
+DEFAULT_LOCATION = get_default_location()
 
 class CollectionManager:
     def __init__(self, contents_display_id):
@@ -210,24 +207,6 @@ class TimeManager:
         self.step = data["step"]
         self.termination = data["termination"]
 
-@dataclass
-class ACS:
-    action: str
-    agent: str
-    time: int
-    time_manager: any
-
-    def __str__(self):
-        return f"({self.action}, {self.agent}, {self.time}{self.time_manager.unit})"
-    
-    def data(self):
-        return {
-            "action": self.action,
-            "agent": self.agent,
-            "time": self.time,
-        }
-
-
 class ACSManager(SimpleCollectionManager):
     def __init__(self, actions_manager, agent_manager, time_manager):
         super().__init__("ACS")
@@ -292,100 +271,6 @@ class ACSManager(SimpleCollectionManager):
     def set_data(self, data):
         self.contents = [ACS(time_manager=self.time_manager, **data_item) for data_item in data]
 
-def create_literal_parser(literals):
-    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-    literal_parser = pp.Literal(literals[0]) | quoted_literal
-    for state in literals[1:]:
-        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-        literal_parser |= pp.Literal(state) | quoted_literal
-    return literal_parser
-
-def create_logic_parser(states):
-    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-    states_parser = pp.Literal(states[0]) | quoted_literal
-    for state in states[1:]:
-        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-        states_parser |= pp.Literal(state) | quoted_literal
-    
-    logic_expr = pp.infix_notation(
-        states_parser,
-        [
-            ("not", 1, pp.OpAssoc.RIGHT),
-            ("and", 2, pp.OpAssoc.LEFT),
-            ("or", 2, pp.OpAssoc.LEFT),
-            ("implies", 2, pp.OpAssoc.LEFT),
-            ("if and only if", 2, pp.OpAssoc.LEFT),
-        ]
-    )
-    return logic_expr
-
-def parse_logic(expression, states):
-    if len(states) == 0:
-        sg.popup_error("At least one fluent is required to create a logic expression", location=DEFAULT_LOCATION)
-        return False
-    logic_expr = create_logic_parser(states)
-    try:
-        # print(states, logic_expr, expression)
-        parsed_expression = logic_expr.parse_string(expression, parse_all=True).as_list()
-    except pp.exceptions.ParseException as e:
-        sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
-        return False
-    # print(parsed_expression)
-    return parsed_expression
-
-@dataclass
-class LogicExpression:
-    expression: str
-    parsed_expression: any = None
-
-    def parse(self, state_manager):
-        states = state_manager.contents
-        parse_result = parse_logic(self.expression, states)
-        if parse_result:
-            self.parsed_expression = parse_result
-            return True
-        else:
-            return False
-
-@dataclass
-class OBS:
-    original_expression: str
-    time: int
-    state_manager: any
-    time_manager: any
-    logic_expression: LogicExpression = None
-    parsed_expression: any = None
-
-    def __post_init__(self):
-        if self.parsed_expression is not None:
-            self.logic_expression = LogicExpression(self.original_expression)
-            self.logic_expression.parsed_expression = self.parsed_expression
-    
-    def parse(self):
-        self.logic_expression = LogicExpression(self.original_expression)
-        return self.logic_expression.parse(self.state_manager)
-
-    def data(self):
-        return {
-            "original_expression": self.logic_expression.expression,
-            "parsed_expression": self.logic_expression.parsed_expression,
-            "time": self.time
-        }
-
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, OBS):
-            return False
-        if self is __value:
-            return True
-        if self.state_manager != __value.state_manager:
-            return False
-        if str(self.logic_expression.parsed_expression) != str(__value.logic_expression.parsed_expression):
-            return False
-        return True
-    
-    def __str__(self):
-        return f"({self.original_expression}, {self.time}{self.time_manager.unit})"
-
 class OBSManager(SimpleCollectionManager):
     def __init__(self, state_manager, time_manager):
         super().__init__("OBS")
@@ -442,87 +327,6 @@ class OBSManager(SimpleCollectionManager):
     def set_data(self, data):
         self.contents = [OBS(state_manager=self.state_manager, time_manager=self.time_manager, **data_item) for data_item in data]
 
-@dataclass
-class Statement:
-    original_expression: str
-    action_manager: ActionManager
-    agent_manager: AgentManager
-    state_manager: StateManager
-    action: str = None
-    agent: str = None
-    statement_type: str = None
-    effects: any = None # [["state1"], ["not", "state2"]]
-    condition: any = None # infix representation
-    
-    def validate_at_least_one_of_each(self):
-        if len(self.action_manager.contents) == 0:
-            sg.popup_error("At least one action is required to create a statement", location=DEFAULT_LOCATION)
-            return False
-        if len(self.state_manager.contents) == 0:
-            sg.popup_error("At least one fluent is required to create a statement", location=DEFAULT_LOCATION)
-            return False
-        return True
-
-
-    def parse(self):
-        if not self.validate_at_least_one_of_each():
-            return False
-
-        action_parser = create_literal_parser(self.action_manager.contents)
-
-        if len(self.agent_manager.contents) == 0: 
-            # agent count CAN be 0, statements like "shoot causes not gun loaded"
-            agent_parser = pp.Empty()
-            agent_parser.set_parse_action(lambda: [None])
-        else:
-            agent_parser = create_literal_parser(self.agent_manager.contents)
-            agent_parser = pp.Opt(pp.Suppress("by") + agent_parser, default=None)
-
-        statement_type_parser = pp.Literal("releases") | pp.Literal("causes")
-
-        state_parser = create_literal_parser(self.state_manager.contents)
-        
-        effect_parser = pp.delimitedList(pp.Opt("not") + state_parser, delim="and")
-        effect_parser.set_parse_action(lambda toks: [toks])
-
-        logic_condition = create_logic_parser(self.state_manager.contents)
-        logic_parser = pp.Opt(pp.Suppress("if") + logic_condition, default=None)
-
-        parser = action_parser + agent_parser + statement_type_parser + effect_parser + logic_parser
-        try:
-            parsed_expression = parser.parse_string(self.original_expression, parse_all=True).as_list()
-        except pp.exceptions.ParseException as e:
-            sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
-            return False
-        self.action, self.agent, self.statement_type, self.effects, self.condition = parsed_expression
-        return parsed_expression
-    
-    def data(self):
-        return {
-            "original_expression": self.original_expression,
-            "action": self.action,
-            "agent": self.agent,
-            "statement_type": self.statement_type,
-            "effects": self.effects,
-            "condition": self.condition,
-        }
-
-    def __eq__(self, __value: object) -> bool:
-        if not isinstance(__value, Statement):
-            return False
-        if self is __value:
-            return True
-        self_data = self.data()
-        self_data["original_expression"] = None
-        o_data = __value.data()
-        o_data["original_expression"] = None
-        if self_data != o_data:
-            return False
-        return True
-    
-    def __str__(self):
-        return self.original_expression
-
 class StatementManager(SimpleCollectionManager):
     def __init__(self, action_manager, agent_manager, state_manager):
         super().__init__("STATEMENT")
@@ -578,76 +382,3 @@ class ManagerManager():
     def update_all(self, window):
         for manager in self.managers:
             manager.update(window)
-
-def main():
-    agent_manager = AgentManager()
-    action_manager = ActionManager()
-    state_manager = StateManager()
-    time_manager = TimeManager()
-    acs_manager = ACSManager(action_manager, agent_manager, time_manager)
-    obs_manager = OBSManager(state_manager, time_manager)
-    statement_manager = StatementManager(action_manager, agent_manager, state_manager)
-
-    manager_manager = ManagerManager(
-        agent_manager,
-        action_manager,
-        state_manager,
-        time_manager,
-        acs_manager,
-        obs_manager,
-        statement_manager,
-    )
-
-    serdelizer_layout = [
-        [sg.Multiline("", key="-SERDE-IO-", size=(100, 30))],
-        [sg.Text("Press serialize to dump application state")],
-        [sg.Button("Serialize"), sg.Button("Deserialize")]
-    ]
-
-    layout = [[ sg.TabGroup([[
-        sg.Tab("Agents", agent_manager.display),
-        sg.Tab("Actions", action_manager.display),
-        sg.Tab("Fluents", state_manager.display),
-        sg.Tab("Time", time_manager.display),
-        sg.Tab("ACS", acs_manager.display),
-        sg.Tab("OBS", obs_manager.display),
-        sg.Tab("Statements", statement_manager.display),
-        sg.Tab("Save", serdelizer_layout)
-    ]], size=(600, 480)) ]]
-
-    window = sg.Window('KRR', layout, location=DEFAULT_LOCATION)
-
-    try:
-        while True:
-            event, values = window.read()
-            if event == sg.WIN_CLOSED:
-                break
-            
-            print(event, values)
-            manager_manager.handle_event(window, event, values)
-
-            if event == "Serialize":
-                data = manager_manager.data()
-                window["-SERDE-IO-"].update(json.dumps(data, indent=2))
-            if event == "Deserialize":
-                data = values["-SERDE-IO-"]
-                try:
-                    data = json.loads(data)
-                except json.JSONDecodeError as e:
-                    sg.popup_error("Unable to parse JSON application data.\nParser message: "+str(e), location=DEFAULT_LOCATION)
-                    continue
-                backup = manager_manager.data()
-                try:
-                    manager_manager.set_data(data)
-                    manager_manager.update_all(window)
-                except:
-                    import traceback
-                    sg.popup_error("Unable to load application data.", location=DEFAULT_LOCATION)
-                    print(traceback.format_exc())
-                    manager_manager.set_data(backup)
-
-    finally:
-        window.close()
-
-if __name__ == "__main__":
-    main()
