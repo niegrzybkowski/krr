@@ -617,7 +617,6 @@ def main():
 
     window = sg.Window('KRR', layout, location=DEFAULT_LOCATION)
 
-    restart = False
     try:
         while True:
             event, values = window.read()
@@ -649,8 +648,6 @@ def main():
 
     finally:
         window.close()
-    if restart:
-        main()
 
 if __name__ == "__main__":
     main()
