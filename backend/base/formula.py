@@ -5,12 +5,6 @@ from . import State
 
 
 class Operator:
-    name: str
-
-    @staticmethod
-    def get(self, name: str, *args, **kwargs):
-        pass
-
     @staticmethod
     def not_(state: Union[State, bool]) -> bool:
         return not bool(state)
@@ -31,14 +25,19 @@ class Operator:
     def if_and_only_if_(state1: Union[State, bool], state2: Union[State, bool]) -> bool:
         return bool(state1) == bool(state2)
 
+    map_methods = {
+        "not": not_,
+        "and": and_,
+        "or": or_,
+        "implies": implies_,
+        "if and only if": if_and_only_if_
+    }
 
-map_methods = {
-    "not": Operator.not_,
-    "and": Operator.and_,
-    "or": Operator.or_,
-    "implies": Operator.implies_,
-    "if and only if": Operator.if_and_only_if_
-}
+    @staticmethod
+    def get(name: str):
+        if name not in Operator.map_methods:
+            raise Exception("Bad name of the method")
+        return Operator.map_methods[name]
 
 
 @dataclass(slots=True)
@@ -46,7 +45,7 @@ class Formula:
     structure: List[Union[str, State]] = field(default_factory=list)
 
     @classmethod
-    def from_text(cls, text: str):
+    def from_text(cls, text: str):  # TODO: It is needed?
         # return cls([])
         pass
 
@@ -65,7 +64,7 @@ class Formula:
                 if isinstance(el, (State, bool)):
                     last_state = el
                 else:
-                    operator = map_methods[el]
+                    operator = Operator.get(el)
 
             if operator is not None:
                 return operator(last_state)
