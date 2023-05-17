@@ -15,6 +15,7 @@ def main():
     acs_manager = ACSManager(action_manager, agent_manager, time_manager)
     obs_manager = OBSManager(state_manager, time_manager)
     statement_manager = StatementManager(action_manager, agent_manager, state_manager)
+    query_manager = QueryManager(action_manager, agent_manager, state_manager, time_manager=time_manager)
 
     manager_manager = ManagerManager(
         agent_manager,
@@ -24,12 +25,15 @@ def main():
         acs_manager,
         obs_manager,
         statement_manager,
+        query_manager,
     )
 
+    scenario_manager = ScenarioManager(manager_manager)
+
     serdelizer_layout = [
-        [sg.Multiline("", key="-SERDE-IO-", size=(100, 30))],
         [sg.Text("Press serialize to dump application state")],
-        [sg.Button("Serialize"), sg.Button("Deserialize")]
+        [sg.Button("Serialize"), sg.Button("Deserialize")],
+        [sg.Multiline("", key="-SERDE-IO-", size=(100, 30))],
     ]
 
     layout = [[ sg.TabGroup([[
@@ -40,7 +44,9 @@ def main():
         sg.Tab("ACS", acs_manager.display),
         sg.Tab("OBS", obs_manager.display),
         sg.Tab("Statements", statement_manager.display),
-        sg.Tab("Save", serdelizer_layout)
+        sg.Tab("Query", query_manager.display),
+        sg.Tab("Scenario", scenario_manager.display),
+        sg.Tab("Save", serdelizer_layout),
     ]], size=(600, 480)) ]]
 
     window = sg.Window('KRR', layout, location=DEFAULT_LOCATION)

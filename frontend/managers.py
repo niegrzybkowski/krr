@@ -1,6 +1,6 @@
 import PySimpleGUI as sg
 from frontend.utils import get_default_location, create_literal_parser, create_logic_parser
-from frontend.data import ACS, OBS, Statement
+from frontend.data import ACS, OBS, Statement, Query
 
 DEFAULT_LOCATION = get_default_location()
 
@@ -23,17 +23,17 @@ class CollectionManager:
     def validate_add(self, element):
         raise NotImplementedError()
     
-    def popup_add(self):
+    def popup_add(self, **_):
         raise NotImplementedError()
     
     def preprocess_element(self, element):
         return element
     
-    def request_new_element(self, window):
-        element = self.popup_add()
-        if not self.validate_add(element):
+    def request_new_element(self, window, **kwargs):
+        element = self.popup_add(**kwargs)
+        if not self.validate_add(element, **kwargs):
             return
-        element = self.preprocess_element(element)
+        element = self.preprocess_element(element, **kwargs)
         self.contents.append(element)
         self.update(window)
 
@@ -64,8 +64,12 @@ class SimpleCollectionManager(CollectionManager):
             [sg.Button("Add", key=self.add_event_key), sg.Button("Remove", key=self.remove_event_key)]
         ]
 
-    def popup_add(self):
-        return sg.popup_get_text(f"Enter new {self.content_name_lower}:", title=f"{self.content_name_title} creation dialog", location=DEFAULT_LOCATION)
+    def popup_add(self, **_):
+        text = sg.popup_get_text(f"Enter new {self.content_name_lower}:", title=f"{self.content_name_title} creation dialog", location=DEFAULT_LOCATION)
+        if text is None:
+            return text
+        else:
+            return text.lower()
     
     def popup_remove(self):
         return sg.popup_get_text(f"Enter {self.content_name_lower} number to remove:", title=f"{self.content_name_title} deletion dialog", location=DEFAULT_LOCATION)
@@ -357,6 +361,78 @@ class StatementManager(SimpleCollectionManager):
                 **data_item
             ) 
             for data_item in data
+        ]
+
+class QueryManager(SimpleCollectionManager):
+    def __init__(self, action_manager, agent_manager, state_manager, time_manager):
+        super().__init__("QUERY")
+        self.action_manager = action_manager
+        self.agent_manager = agent_manager
+        self.state_manager = state_manager
+        self.time_manager = time_manager
+
+        self.add_fluent_query_event_key = "-QUERY-ADD-FLUENT-"
+        self.add_action_query_event_key = "-QUERY-ADD-ACTION-"
+        self.add_agent_query_event_key = "-QUERY-ADD-AGENT-"
+
+        self.display[0] = [sg.Text(f"Queries:")]
+
+        self.display[2] = [
+            sg.Button("Add state query", key=self.add_fluent_query_event_key),
+            sg.Button("Add action query", key=self.add_action_query_event_key),
+            sg.Button("Add agent query", key=self.add_agent_query_event_key),
+            sg.Button("Remove", key=self.remove_event_key)
+        ]
+
+    def validate_add(self, element, query_type):
+        if element is None:
+            return False
+        element_dataclass = Query(element, query_type, self.state_manager, self.action_manager, self.agent_manager,  self.time_manager)
+        if not element_dataclass.parse():
+            return False
+        if not super().validate_add(element_dataclass):
+            return False
+        return element_dataclass
+
+    def handle_event(self, window, event, values):
+        super().handle_event(window, event, values)
+
+        if event == self.add_fluent_query_event_key:
+            self.request_new_element(window, query_type="fluent")
+        if event == self.add_action_query_event_key:
+            self.request_new_element(window, query_type="action")
+        if event == self.add_agent_query_event_key:
+            self.request_new_element(window, query_type="agent")
+    
+    def preprocess_element(self, element, query_type):
+        return self.validate_add(element, query_type) # jank
+    
+    def set_data(self, data):
+        self.contents = [
+            Query(
+                action_manager=self.action_manager,
+                agent_manager=self.agent_manager,
+                state_manager=self.state_manager,
+                time_manager=self.time_manager,
+                **data_item
+            ) 
+            for data_item in data
+        ]
+    
+class ScenarioManager:
+    def __init__(self, manager_manager):
+        self.scenario_compile_status_key = "-SCENARIO-COMPILE-STATUS-"
+        self.compile_button_key = "-SCENARIO-COMPILE-SCENARIO-BUTTON-"
+        self.run_query_button_key = "-SCENARIO-RUN-QUERY-BUTTON-"
+        self.manager_manager = manager_manager
+        self.scenario_compile_status = "not compiled"
+        self.display = [
+            [
+                sg.Text("Scenario status: "), 
+                sg.Text(self.scenario_compile_status, key=self.scenario_compile_status_key), 
+                sg.Button("Compile", key=self.compile_button_key), 
+                sg.Button("Run queries", key=self.run_query_button_key, disabled=True)
+            ]
         ]
 
 class ManagerManager():

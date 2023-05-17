@@ -156,19 +156,150 @@ class Statement:
     def __str__(self):
         return self.original_expression
 
-# @dataclass
-# class Query:
-#     original_expression: str
-#     query_type: str
-#     state_manager: any
-#     action_manager: any
-#     agent_manager: any
-#     time_manager: any
-#     parsed_expression: any = None
+
+@dataclass
+class FluentQuery:
+    kind: str
+    condition: any
+    time: int
+
+    def data(self):
+        return {
+            "kind": self.kind,
+            "condition": self.condition,
+            "time": self.time, 
+        }
+
+@dataclass
+class  ActionQuery:
+    action: str
+    agent: str
+    time: int
+
+    def data(self):
+        return {
+            "action": self.action,
+            "agent": self.agent,
+            "time": self.time, 
+        }
+
+@dataclass
+class  AgentQuery:
+    agent: str
+
+    def data(self):
+        return {
+            "agent": self.agent
+        }
+
+
+@dataclass
+class Query:
+    original_expression: str
+    query_type: str
+    state_manager: any
+    action_manager: any
+    agent_manager: any
+    time_manager: any
+    concrete_query: any = None
     
+    def __post_init__(self):
+        if self.concrete_query is not None:
+            if self.query_type == "fluent":
+                constructor = FluentQuery
+            if self.query_type == "action":
+                constructor = ActionQuery
+            if self.query_type == "agent":
+                constructor = AgentQuery
+            self.concrete_query = constructor(self.concrete_query)
+    
+    def validate_at_least_one(self, manager):
+        if len(manager.contents) == 0:
+            sg.popup_error(f"At least one {manager.content_name_lower} is required to create a {self.query_type} query.", location=DEFAULT_LOCATION)
+            return False
+        return True
 
-#     def parse_as_fluent(self):
+    def fluent_parser(self):
+        if not self.validate_at_least_one(self.state_manager):
+            return False
+        kind_parser = (pp.Literal("necessary") | pp.Literal("possibly")).set_name("query type")
+        condition_parser = create_logic_parser(self.state_manager.contents).set_name("condition")
+        time_parser = pp.Word(pp.nums).set_name("time")
+        time_parser.add_parse_action(lambda toks: int(toks[0]))
+
+        parser = kind_parser + condition_parser + pp.Suppress("at") + time_parser + pp.Opt(pp.Suppress("when sc"))
+        return parser
+
+    def action_parser(self):
+        if not self.validate_at_least_one(self.action_manager):
+            return False
+        if not self.validate_at_least_one(self.agent_manager):
+            return False
+        action_parser = create_literal_parser(self.action_manager.contents).set_name("action")
+        agent_parser = create_literal_parser(self.agent_manager.contents).set_name("agent")
+        time_parser = pp.Word(pp.nums).set_name("time")
+        time_parser.add_parse_action(lambda toks: int(toks[0]))
+
+        parser = (
+            pp.Suppress("necessary") + action_parser + 
+            pp.Suppress("by") + agent_parser + 
+            pp.Suppress("at") + time_parser +
+            pp.Opt(pp.Suppress("when sc"))
+        )
+
+        return parser
+
+    def agent_parser(self):
+        if not self.validate_at_least_one(self.agent_manager):
+            return False
+        agent_parser = create_literal_parser(self.agent_manager.contents)
+
+        parser = pp.Suppress("agent") + agent_parser + pp.Suppress("is active") + pp.Opt(pp.Suppress("when sc"))
+
+        return parser
+
+    def parse(self):
+        if self.query_type == "fluent":
+            parser = self.fluent_parser()
+            constructor = FluentQuery
+        if self.query_type == "action":
+            parser = self.action_parser()
+            constructor = ActionQuery
+        if self.query_type == "agent":
+            parser = self.agent_parser()
+            constructor = AgentQuery
+
+        if not parser:
+            return False
         
+        try:
+            parsed_expression = parser.parse_string(self.original_expression, parse_all=True).as_list()
+            data_element = constructor(*parsed_expression)
+        except pp.exceptions.ParseException as e:
+            sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
+            return False
+        self.concrete_query = data_element
+        return self
 
-#     def parse(self):
-#         pass
+    def data(self):
+        return {
+            "original_expression": self.original_expression,
+            "query_type": self.query_type,
+            "concrete_query": self.concrete_query.data()
+        }
+    
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, Query):
+            return False
+        if self is __value:
+            return True
+        self_data = self.data()
+        self_data["original_expression"] = None
+        o_data = __value.data()
+        o_data["original_expression"] = None
+        if self_data != o_data:
+            return False
+        return True
+    
+    def __str__(self):
+        return self.original_expression
