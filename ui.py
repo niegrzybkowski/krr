@@ -219,6 +219,13 @@ class ACS:
 
     def __str__(self):
         return f"({self.action}, {self.agent}, {self.time}{self.time_manager.unit})"
+    
+    def data(self):
+        return {
+            "action": self.action,
+            "agent": self.agent,
+            "time": self.time,
+        }
 
 
 class ACSManager(SimpleCollectionManager):
@@ -351,7 +358,8 @@ class OBS:
 
     def data(self):
         return {
-            "logic_expression": self.logic_expression,
+            "original_expression": self.logic_expression.expression,
+            "parsed_expression": self.logic_expression.parsed_expression,
             "time": self.time
         }
 
