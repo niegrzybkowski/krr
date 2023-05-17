@@ -45,7 +45,7 @@ class Formula:
     structure: List[Union[str, State]] = field(default_factory=list)
 
     @classmethod
-    def from_text(cls, text: str):  # TODO: It is needed?
+    def from_text(cls, text: str):
         # return cls([])
         pass
 
