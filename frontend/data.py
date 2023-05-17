@@ -211,7 +211,7 @@ class Query:
                 constructor = ActionQuery
             if self.query_type == "agent":
                 constructor = AgentQuery
-            self.concrete_query = constructor(self.concrete_query)
+            self.concrete_query = constructor(**self.concrete_query)
     
     def validate_at_least_one(self, manager):
         if len(manager.contents) == 0:
