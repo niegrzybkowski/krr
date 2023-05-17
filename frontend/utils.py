@@ -31,6 +31,8 @@ def create_logic_parser(states):
         quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
         states_parser |= pp.Literal(state) | quoted_literal
     
+    states_parser = states_parser.set_name("state")
+
     logic_expr = pp.infix_notation(
         states_parser,
         [

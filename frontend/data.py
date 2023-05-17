@@ -75,7 +75,6 @@ class OBS:
     def __str__(self):
         return f"({self.original_expression}, {self.time}{self.time_manager.unit})"
     
-
 @dataclass
 class Statement:
     original_expression: str
@@ -102,22 +101,22 @@ class Statement:
         if not self.validate_at_least_one_of_each():
             return False
 
-        action_parser = create_literal_parser(self.action_manager.contents)
+        action_parser = create_literal_parser(self.action_manager.contents).set_name("action")
 
         if len(self.agent_manager.contents) == 0: 
             # agent count CAN be 0, statements like "shoot causes not gun loaded"
             agent_parser = pp.Empty()
             agent_parser.set_parse_action(lambda: [None])
         else:
-            agent_parser = create_literal_parser(self.agent_manager.contents)
+            agent_parser = create_literal_parser(self.agent_manager.contents).set_name("agent")
             agent_parser = pp.Opt(pp.Suppress("by") + agent_parser, default=None)
 
-        statement_type_parser = pp.Literal("releases") | pp.Literal("causes")
+        statement_type_parser = (pp.Literal("releases") | pp.Literal("causes")).set_name("statement type (one of 'releases' or 'causes')")
 
-        state_parser = create_literal_parser(self.state_manager.contents)
+        state_parser = create_literal_parser(self.state_manager.contents).set_name("state")
         
         effect_parser = pp.delimitedList(pp.Opt("not") + state_parser, delim="and")
-        effect_parser.set_parse_action(lambda toks: [toks])
+        effect_parser.set_parse_action(lambda toks: [toks]).set_name("effect list")
 
         logic_condition = create_logic_parser(self.state_manager.contents)
         logic_parser = pp.Opt(pp.Suppress("if") + logic_condition, default=None)
@@ -156,3 +155,20 @@ class Statement:
     
     def __str__(self):
         return self.original_expression
+
+# @dataclass
+# class Query:
+#     original_expression: str
+#     query_type: str
+#     state_manager: any
+#     action_manager: any
+#     agent_manager: any
+#     time_manager: any
+#     parsed_expression: any = None
+    
+
+#     def parse_as_fluent(self):
+        
+
+#     def parse(self):
+#         pass
