@@ -1,31 +1,57 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
 from . import State, Scenario, Agent, Statement, Obs, Action
-from . import LogicExpection
+from . import LogicExpection, ParsingException
 
 
 @dataclass(slots=True)
-class Query(ABC):
+class Query:
     scenario: Scenario
     termination: int
 
-    @abstractmethod
+    @classmethod
+    def from_ui(cls, scenario, termination, data: dict) -> List[ActionQuery | FluentQuery | AgentQuery]:
+        try:
+            _types = {
+                "action": ActionQuery,
+                "fluent": FluentQuery,
+                "agent": AgentQuery,
+            }
+            out = [_types[item['query_type']].from_ui(scenario, termination, item['concrete_query']) for item in data['QUERY']]
+        except KeyError:
+            raise ParsingException('Failed to parse query.')
+        return out
+
     def run(self) -> str:
-        pass
+        raise NotImplementedError()
 
     def is_valid(self) -> None:
         # raise LogicException("...")
         # obs must be defined for smallest timepoint in scenario
-        pass
+        raise NotImplementedError()
 
 
 @dataclass(slots=True)
 class ActionQuery(Query):
     action: Action
+    # agent: Agent # TODO: uwzględnienie agenta i punktu w czasie 
+    # timepoint: int
+
+    @classmethod
+    def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
+        try:
+            out = cls(scenario=scenario, termination=termination, 
+                      action=Action(name=data['action']),
+                    #   agent=Agent(name=data['agent']),
+                    #   timepoint=data['time']
+                      )
+        except (KeyError, TypeError):
+            raise ParsingException('Failed to parse action query.')
+        return out
 
     def run(self) -> str:
         # super().is_valid()
@@ -62,6 +88,18 @@ class FluentQuery(Query):
     fluent: State  # TODO: confirm whether fluent can be formula - PM it don't think so
     timepoint: int
     mode: str  # 'necessary', 'possibly'
+
+    @classmethod
+    def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
+        try:
+            out = cls(scenario=scenario, termination=termination,
+                      fluent=State(name=data['condition']),
+                      timepoint=data['time'],
+                      mode=data['kind']
+                      )
+        except (KeyError, TypeError):
+            raise ParsingException('Failed to parse fluent query.')
+        return out
 
     def __post_init__(self):
         mode = self.mode.lower()
@@ -138,6 +176,16 @@ def eliminate_duplicates(_list: List[Obs]) -> List[Obs]:
 @dataclass(slots=True)
 class AgentQuery(Query):
     agent: Agent
+
+    @classmethod
+    def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
+        try:
+            out = cls(scenario=scenario, termination=termination,
+                      agent=Agent(name=data['agent'])
+                      )
+        except (KeyError, TypeError):
+            raise ParsingException('Failed to parse agent query.')
+        return out
 
     def run(self) -> str:
         # super().is_valid()

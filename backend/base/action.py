@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 from . import agent as ag, timepoint as tp, statement as st
+from . import ParsingException
 
 
 @dataclass(slots=True)
@@ -12,19 +13,27 @@ class Action:
     name: str
     performed: bool = False
 
+    @classmethod
+    def from_ui(cls, data: dict) -> List[Action]:
+        try:
+            out = [cls(name=_name) for _name in data['ACTION']]
+        except KeyError:
+            raise ParsingException('Failed to parse action.')
+        return out
+
     def run(
             self, agent: ag.Agent, obs: tp.Obs, statements: List[st.Statement]
     ) -> List[tp.Obs]:
         """run action by agent if """
         postconditions = [[]]
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
-            if _statement.precondition:
+            if _statement.precondition.bool(obs=obs):
                 agent.active = True
                 self.performed = True
                 postconditions[0].extend(copy(_statement.postcondition))
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
-            if _statement.precondition:
+            if _statement.precondition.bool(obs=obs):
                 agent.active = True
                 self.performed = True
 

@@ -1,6 +1,9 @@
 import PySimpleGUI as sg
 from frontend.utils import get_default_location, create_literal_parser, create_logic_parser
 from frontend.data import ACS, OBS, Statement, Query
+from backend import BackendExpection, parse_data, run_queries
+
+import traceback
 
 DEFAULT_LOCATION = get_default_location()
 
@@ -421,19 +424,53 @@ class QueryManager(SimpleCollectionManager):
     
 class ScenarioManager:
     def __init__(self, manager_manager):
-        self.scenario_compile_status_key = "-SCENARIO-COMPILE-STATUS-"
-        self.compile_button_key = "-SCENARIO-COMPILE-SCENARIO-BUTTON-"
+        # self.scenario_compile_status_key = "-SCENARIO-COMPILE-STATUS-"
+        # self.compile_button_key = "-SCENARIO-COMPILE-SCENARIO-BUTTON-"
         self.run_query_button_key = "-SCENARIO-RUN-QUERY-BUTTON-"
+        self.run_query_results = "-SCENARIO-RESULTS-"
         self.manager_manager = manager_manager
-        self.scenario_compile_status = "not compiled"
+        # self.scenario_compile_status = "not compiled"
         self.display = [
             [
                 sg.Text("Scenario status: "), 
-                sg.Text(self.scenario_compile_status, key=self.scenario_compile_status_key), 
-                sg.Button("Compile", key=self.compile_button_key), 
-                sg.Button("Run queries", key=self.run_query_button_key, disabled=True)
-            ]
+                # sg.Text(self.scenario_compile_status, key=self.scenario_compile_status_key), 
+                # sg.Button("Compile", key=self.compile_button_key), 
+                sg.Button("Run queries", key=self.run_query_button_key, disabled=False),
+            ],
+                [sg.Multiline("", key=self.run_query_results, size=(100, 30), disabled=True)],
+            
         ]
+    
+    def handle_event(self, window, event):
+        print(event)
+        # if event == self.compile_button_key:
+        #     self.compile_button_func(window)
+        if event == self.run_query_button_key:
+            self.run_query_button_func(window)
+    
+    # def compile_button_func(self, window):
+        # try:
+        #     data: dict = parse_data(data=self.manager_manager.data())
+        #     results: dict = run_queries(data)
+        #     msg = "\n".join(f'{k:>3}. {v}' for k,v in results.items())
+        # except BackendExpection as e:
+        #     msg = getattr(e, 'message', repr(e))
+        # except Exception as e:
+        #     print(traceback.format_exc())
+        #     msg = 'Something went wrong'
+        # window[self.scenario_compile_status_key] = 'Compiled'
+
+    def run_query_button_func(self, window):
+        try:
+            data: dict = parse_data(data=self.manager_manager.data())
+            results: dict = run_queries(data)
+            msg = "\n".join(f'{k:>3}. {v}' for k,v in results.items())
+        except BackendExpection as e:
+            msg = getattr(e, 'message', repr(e))
+        except Exception as e:
+            print(traceback.format_exc())
+            msg = 'Something went wrong'
+        window[self.run_query_results].update(msg)
 
 class ManagerManager():
     def __init__(self, *managers):

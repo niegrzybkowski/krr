@@ -1,9 +1,10 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
 
 from sortedcontainers import SortedDict
 
 from . import Statement, TimePoint, Obs
-from . import LogicExpection
+from . import LogicExpection, ParsingException
 
 from typing import List, Optional
 
@@ -19,6 +20,14 @@ class Scenario:
         if len(unique_timepoints) != len(timepoints):
             raise LogicExpection("Only one definition for single time point can exist")
         return cls(timepoints=SortedDict({timepoint.t: timepoint for timepoint in timepoints}), statements=statements)
+
+    @classmethod
+    def from_ui(cls, data: dict) -> Scenario:
+        try:
+            out = cls.from_timepoints(timepoints=TimePoint.from_ui(data), statements=Statement.from_ui(data))
+        except KeyError:
+            raise ParsingException('Failed to parse scenario.')
+        return out
 
     def exist_timepoint(self, t: int) -> bool:
         return t in self.timepoints

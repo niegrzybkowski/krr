@@ -59,6 +59,7 @@ def main():
             
             print(event, values)
             manager_manager.handle_event(window, event, values)
+            scenario_manager.handle_event(window, event)
 
             if event == "Serialize":
                 data = manager_manager.data()

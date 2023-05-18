@@ -1,8 +1,10 @@
+from __future__ import annotations
 from dataclasses import field, dataclass
 from typing import Union, List
 
 from . import State
-from . import BackendExpection
+from . import timepoint
+from . import expection as exc # BackendExpection, ParsingException, LogicException
 
 
 class Operator:
@@ -37,20 +39,26 @@ class Operator:
     @staticmethod
     def get(name: str):
         if name not in Operator.map_methods:
-            raise BackendExpection("Bad name of the method")
+            raise exc.BackendExpection("Bad name of the method")
         return Operator.map_methods[name]
 
 
 @dataclass(slots=True)
 class Formula:
-    structure: List[Union[str, State]] = field(default_factory=list)
+    structure: List[Union[str, str]] = field(default_factory=list)
 
     @classmethod
-    def from_text(cls, text: str):
-        # return cls([])
-        pass
+    def from_ui(cls, data: dict) -> Formula:
+        try:
+            out = data['condition']
+        except KeyError:
+            raise exc.ParsingException('Failed to parse precondition.')
+        return cls(structure=out)
 
-    def __bool__(self):
+    def bool(self, obs: timepoint.Obs):
+        if not self.structure:
+            return True
+
         def _traverse(structure_):
             last_state = None
             operator = None
@@ -62,8 +70,11 @@ class Formula:
                         return operator(last_state)
                     else:
                         return operator(last_state, el)
-                if isinstance(el, (State, bool)):
-                    last_state = el
+                if el not in list(Operator.map_methods.keys()):
+                    _el = next(filter(lambda _state: _state.name == el, obs.states), None)
+                    if not el:
+                        raise exc.LogicException('State in precondition was not found in OBS.')
+                    last_state = _el
                 else:
                     operator = Operator.get(el)
 
