@@ -1,10 +1,14 @@
 from __future__ import annotations
+import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+
+from base.state import State
+import base.timepoint as tp # Obs
+
+from base.exception import LogicException, BackendException , ParsingException
 from dataclasses import field, dataclass
 from typing import Union, List
 
-from . import State
-from . import timepoint
-from . import expection as exc # BackendExpection, ParsingException, LogicException
 
 
 class Operator:
@@ -39,7 +43,7 @@ class Operator:
     @staticmethod
     def get(name: str):
         if name not in Operator.map_methods:
-            raise exc.BackendExpection("Bad name of the method")
+            raise BackendException("Bad name of the method")
         return Operator.map_methods[name]
 
 
@@ -52,29 +56,39 @@ class Formula:
         try:
             out = data['condition']
         except KeyError:
-            raise exc.ParsingException('Failed to parse precondition.')
+            raise ParsingException('Failed to parse precondition.')
         return cls(structure=out)
 
-    def bool(self, obs: timepoint.Obs):
+    def bool(self, obs: tp.Obs):
         if not self.structure:
             return True
+
+        def get_by_name_safe_raise(obs: tp.Obs, element: str | bool) -> State:
+            if isinstance(element, bool):
+                return element
+            el = obs.get_by_name(element)
+            if el is None:
+                print(el, obs)
+                raise LogicException('State in precondition was not found in OBS.')
+            return el
 
         def _traverse(structure_):
             last_state = None
             operator = None
+            if isinstance(structure_, str):
+                structure_ = [structure_]
             for el in structure_:
+                print(el)
                 if isinstance(el, list):
                     el = _traverse(el)
                 if last_state is not None and operator is not None:
                     if operator.__name__ == "not_":
                         return operator(last_state)
                     else:
-                        return operator(last_state, el)
+                        _el = get_by_name_safe_raise(obs, el)
+                        return operator(last_state, _el)
                 if el not in list(Operator.map_methods.keys()):
-                    _el = next(filter(lambda _state: _state.name == el, obs.states), None)
-                    if not el:
-                        raise exc.LogicException('State in precondition was not found in OBS.')
-                    last_state = _el
+                    last_state = get_by_name_safe_raise(obs, el)
                 else:
                     operator = Operator.get(el)
 
