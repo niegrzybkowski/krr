@@ -33,7 +33,8 @@ class CollectionManager:
         return element
     
     def request_new_element(self, window, **kwargs):
-        element = self.popup_add(**kwargs)
+        #element = self.popup_add(**kwargs)
+        element = window[self.text_field_key].get()
         if not self.validate_add(element, **kwargs):
             return
         element = self.preprocess_element(element, **kwargs)
@@ -61,10 +62,11 @@ class SimpleCollectionManager(CollectionManager):
         self.content_name_title = content_name.title()
         self.add_event_key = f"-{self.content_name}-ADD-"
         self.remove_event_key = f"-{self.content_name}-REMOVE-"
+        self.text_field_key = f"-{self.content_name}-INPUT-"
         self.display = [
             [sg.Text(f"{self.content_name_title}s:", key=f"-{content_name}-HEADER-")],
             [self.contents_display],
-            [sg.Button("Add", key=self.add_event_key), sg.Button("Remove", key=self.remove_event_key)]
+            [sg.Input("", key=self.text_field_key), sg.Button("Add", key=self.add_event_key), sg.Button("Remove", key=self.remove_event_key)]
         ]
 
     def popup_add(self, **_):
@@ -378,13 +380,14 @@ class QueryManager(SimpleCollectionManager):
         self.add_action_query_event_key = "-QUERY-ADD-ACTION-"
         self.add_agent_query_event_key = "-QUERY-ADD-AGENT-"
 
-        self.display[0] = [sg.Text(f"Queries:")]
-
-        self.display[2] = [
-            sg.Button("Add state query", key=self.add_fluent_query_event_key),
+        self.display = [
+            [sg.Text(f"Queries:")],
+            self.display[1],
+            [self.display[2][0]],
+            [sg.Button("Add state query", key=self.add_fluent_query_event_key),
             sg.Button("Add action query", key=self.add_action_query_event_key),
             sg.Button("Add agent query", key=self.add_agent_query_event_key),
-            sg.Button("Remove", key=self.remove_event_key)
+            sg.Button("Remove", key=self.remove_event_key)]
         ]
 
     def validate_add(self, element, query_type):
