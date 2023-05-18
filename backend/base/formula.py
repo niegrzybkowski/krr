@@ -2,7 +2,7 @@ from dataclasses import field, dataclass
 from typing import Union, List
 
 from . import State
-from ..exceptions import BackendExpection
+from . import BackendExpection
 
 
 class Operator:

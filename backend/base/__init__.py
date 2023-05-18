@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .expection import BackendExpection, ParsingException, LogicExpection
 from .agent import Agent
 from .state import State
 from .formula import Formula, Operator

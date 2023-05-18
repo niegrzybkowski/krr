@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional, Tuple, List
 
 from . import action, agent, state
-from ..exceptions import LogicExpection
+from . import LogicExpection
 
 
 @dataclass

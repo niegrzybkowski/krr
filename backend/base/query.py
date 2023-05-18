@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 from . import State, Scenario, Agent, Statement, Obs, Action
-from ..exceptions import LogicExpection
+from . import LogicExpection
 
 
 @dataclass(slots=True)

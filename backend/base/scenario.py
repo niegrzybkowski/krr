@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from sortedcontainers import SortedDict
 
 from . import Statement, TimePoint, Obs
-from ..exceptions import LogicExpection
+from . import LogicExpection
 
 from typing import List, Optional
 
