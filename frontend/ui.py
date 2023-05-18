@@ -47,7 +47,9 @@ def main():
         sg.Tab("Query", query_manager.display),
         sg.Tab("Scenario", scenario_manager.display),
         sg.Tab("Save", serdelizer_layout),
-    ]], size=(600, 480)) ]]
+    ]]
+    #, size=(600, 480)
+    ) ]]
 
     window = sg.Window('KRR', layout, location=DEFAULT_LOCATION)
 
