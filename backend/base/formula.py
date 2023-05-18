@@ -68,7 +68,6 @@ class Formula:
                 return element
             el = obs.get_by_name(element)
             if el is None:
-                print(el, obs)
                 raise LogicException('State in precondition was not found in OBS.')
             return el
 
@@ -78,7 +77,6 @@ class Formula:
             if isinstance(structure_, str):
                 structure_ = [structure_]
             for el in structure_:
-                print(el)
                 if isinstance(el, list):
                     el = _traverse(el)
                 if last_state is not None and operator is not None:

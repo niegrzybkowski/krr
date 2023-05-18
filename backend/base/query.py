@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
 # from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
-from . import State, Scenario, Agent, Statement, Obs, Action
-from . import LogicExpection, ParsingException
+from base.state import State
+from base.scenario import Scenario
+from base.agent import Agent
+from base.statement import Statement
+from base.timepoint import Obs
+from base.action import Action
+from .exception import LogicException, ParsingException
 
 
 @dataclass(slots=True)
@@ -105,7 +114,7 @@ class FluentQuery(Query):
         mode = self.mode.lower()
 
         if mode not in ['necessary', 'possibly']:
-            raise LogicExpection(
+            raise LogicException(
                 "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
 
     def run(self) -> str:
@@ -137,7 +146,7 @@ class FluentQuery(Query):
                 __state: State = next(
                     filter(lambda item: item.name == _state.name, el), None)
                 if __state is None:
-                    raise LogicExpection(f'State {_state.name} was not found in OBS')
+                    raise LogicException(f'State {_state.name} was not found in OBS')
                 res.append(__state)
             return res
 

@@ -1,10 +1,14 @@
 from __future__ import annotations
+# import os,sys
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..')))
 from dataclasses import dataclass, field
 
 from sortedcontainers import SortedDict
 
-from . import Statement, TimePoint, Obs
-from . import LogicExpection, ParsingException
+from .  import Statement
+from .  import TimePoint, Obs
+from exception import LogicException, ParsingException
 
 from typing import List, Optional
 
@@ -18,7 +22,7 @@ class Scenario:
     def from_timepoints(cls, timepoints: List[TimePoint], statements: List[Statement]):
         unique_timepoints = set(map(lambda x: x.t, timepoints))
         if len(unique_timepoints) != len(timepoints):
-            raise LogicExpection("Only one definition for single time point can exist")
+            raise LogicException("Only one definition for single time point can exist")
         return cls(timepoints=SortedDict({timepoint.t: timepoint for timepoint in timepoints}), statements=statements)
 
     @classmethod
@@ -39,11 +43,11 @@ class Scenario:
         try:
             k = list(self.timepoints.keys())[0]
             if not self.timepoints[k].is_obs():
-                raise LogicExpection()
+                raise LogicException()
             return self.timepoints[k].obs
-        except (IndexError, LogicExpection) as e:
+        except (IndexError, LogicException) as e:
             if not quiet:
-                raise LogicExpection('OBS must be defined before any action can be performed (ACS).')
+                raise LogicException('OBS must be defined before any action can be performed (ACS).')
             else:
                 return None
 

@@ -30,7 +30,7 @@ def run_queries(data: dict):
     for i, query in enumerate(data['queries']):
         try:
             msg = query.run()
-        except BackendExpection as e:
+        except BackendException as e:
             msg = getattr(e, 'message', repr(e))
         except Exception as e:
             print(traceback.format_exc())

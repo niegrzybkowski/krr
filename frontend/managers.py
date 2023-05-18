@@ -1,7 +1,11 @@
+import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+
 import PySimpleGUI as sg
 from frontend.utils import get_default_location, create_literal_parser, create_logic_parser
 from frontend.data import ACS, OBS, Statement, Query
-from backend import BackendExpection, parse_data, run_queries
+from backend.base import BackendException
+from backend import parse_data, run_queries
 
 import traceback
 
@@ -456,7 +460,7 @@ class ScenarioManager:
         #     data: dict = parse_data(data=self.manager_manager.data())
         #     results: dict = run_queries(data)
         #     msg = "\n".join(f'{k:>3}. {v}' for k,v in results.items())
-        # except BackendExpection as e:
+        # except BackendException as e:
         #     msg = getattr(e, 'message', repr(e))
         # except Exception as e:
         #     print(traceback.format_exc())
@@ -468,7 +472,7 @@ class ScenarioManager:
             data: dict = parse_data(data=self.manager_manager.data())
             results: dict = run_queries(data)
             msg = "\n".join(f'{k:>3}. {v}' for k,v in results.items())
-        except BackendExpection as e:
+        except BackendException as e:
             msg = getattr(e, 'message', repr(e))
         except Exception as e:
             print(traceback.format_exc())

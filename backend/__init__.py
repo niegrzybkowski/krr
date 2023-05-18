@@ -1,2 +1,6 @@
-from backend.base import *
-from .master import parse_data, run_queries
+import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+
+from backend import *
+from backend.master import *
+

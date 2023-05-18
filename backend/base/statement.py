@@ -1,33 +1,40 @@
 from __future__ import annotations
 
+import os,sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+
 from abc import ABC
 from dataclasses import dataclass
 from typing import List
 
-from . import action, agent, formula, state, timepoint
-from . import ParsingException
+import  base.action
+import  base.agent
+import  base.formula
+import  base.state
+import  base.timepoint
+from base.exception import ParsingException
 
 
 def getPrecondition(value):
     return value
 
-def getPostcondition(value: List[str]) -> List[state.State]:
+def getPostcondition(value: List[str]) -> List[base.state.State]:
     holds = True
     out = []
     for el in value:
         if el == "not":
             holds = False
             continue
-        out.append(state.State(name=el, holds=holds))
+        out.append(base.state.State(name=el, holds=holds))
         holds = True
     return out
 
 
 @dataclass(slots=True)
 class Statement(ABC):
-    action: action.Action
-    agent: agent.Agent
-    precondition: formula.Formula
+    action: base.action.Action
+    agent: base.agent.Agent
+    precondition: base.formula.Formula
 
     @classmethod
     def from_ui(cls, data: dict) -> List[EffectStatement | ReleaseStatement]:
@@ -38,9 +45,9 @@ class Statement(ABC):
             }
             out = [
                 _types[_data['statement_type']](
-                    action=action.Action(name=_data['action']),
-                    agent=agent.Agent(name=_data['agent']),
-                    precondition=formula.Formula.from_ui(_data),
+                    action=base.action.Action(name=_data['action']),
+                    agent=base.agent.Agent(name=_data['agent']),
+                    precondition=base.formula.Formula.from_ui(_data),
                     postcondition=getPostcondition(_data['effects'])
                     ) for _data in data['STATEMENT']
                 ]
@@ -54,9 +61,9 @@ class Statement(ABC):
 
 @dataclass(slots=True)
 class EffectStatement(Statement):
-    postcondition: List[state.State]
+    postcondition: List[base.state.State]
 
 
 @dataclass(slots=True)
 class ReleaseStatement(Statement):
-    postcondition: List[state.State]
+    postcondition: List[base.state.State]
