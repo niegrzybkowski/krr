@@ -55,7 +55,7 @@ class Statement(ABC):
             raise ParsingException('Failed to parse statement.')
         return out
 
-    def bool(self, obs: timepoint.Obs):
+    def bool(self, obs: base.timepoint.Obs):
         return self.precondition.bool(obs=obs)
 
 
