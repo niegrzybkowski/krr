@@ -70,7 +70,7 @@
   ],
   "OBS": [
     {
-      "original_expression": "not student tired and student in house and not professor at university",
+      "original_expression": "not student tired and student in house and not professor at university and student at university",
       "parsed_expression": [
         [
           [
@@ -83,6 +83,11 @@
           [
             "not",
             "professor at university"
+          ],
+          "and",
+          [
+            "not",
+            "student at university"
           ]
         ]
       ],
