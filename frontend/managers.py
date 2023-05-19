@@ -1,5 +1,4 @@
 import os,sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 import PySimpleGUI as sg
 from frontend.utils import get_default_location, create_literal_parser, create_logic_parser

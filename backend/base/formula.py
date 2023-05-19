@@ -1,14 +1,11 @@
 from __future__ import annotations
-import os,sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
-from base.state import State
-import base.timepoint as tp # Obs
+from . import State
+from . import timepoint as tp  # Obs
 
-from base.exception import LogicException, BackendException , ParsingException
+from . import exception as exc
 from dataclasses import field, dataclass
 from typing import Union, List
-
 
 
 class Operator:
@@ -43,7 +40,7 @@ class Operator:
     @staticmethod
     def get(name: str):
         if name not in Operator.map_methods:
-            raise BackendException("Bad name of the method")
+            raise exc.BackendException("Bad name of the method")
         return Operator.map_methods[name]
 
 
@@ -56,7 +53,7 @@ class Formula:
         try:
             out = data['condition']
         except KeyError:
-            raise ParsingException('Failed to parse precondition.')
+            raise exc.ParsingException('Failed to parse precondition.')
         return cls(structure=out)
 
     def bool(self, obs: tp.Obs):
@@ -68,7 +65,7 @@ class Formula:
                 return element
             el = obs.get_by_name(element)
             if el is None:
-                raise LogicException('State in precondition was not found in OBS.')
+                raise exc.LogicException('State in precondition was not found in OBS.')
             return el
 
         def _traverse(structure_):

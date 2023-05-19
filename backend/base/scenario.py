@@ -1,16 +1,12 @@
 from __future__ import annotations
-# import os,sys
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..')))
+
 from dataclasses import dataclass, field
+from typing import List, Optional
 
 from sortedcontainers import SortedDict
 
-from .  import Statement
-from .  import TimePoint, Obs
-from exception import LogicException, ParsingException
-
-from typing import List, Optional
+from . import LogicException, ParsingException
+from . import Statement, TimePoint, Obs
 
 
 @dataclass(slots=True)

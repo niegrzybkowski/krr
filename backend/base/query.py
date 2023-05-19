@@ -1,20 +1,10 @@
 from __future__ import annotations
 
-import os,sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
-
-# from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
-from base.state import State
-from base.scenario import Scenario
-from base.agent import Agent
-from base.statement import Statement
-from base.timepoint import Obs
-from base.action import Action
-from .exception import LogicException, ParsingException
+from . import State, Scenario, Agent, Statement, Obs, Action
+from . import LogicException, ParsingException
 
 
 @dataclass(slots=True)
@@ -30,7 +20,8 @@ class Query:
                 "fluent": FluentQuery,
                 "agent": AgentQuery,
             }
-            out = [_types[item['query_type']].from_ui(scenario, termination, item['concrete_query']) for item in data['QUERY']]
+            out = [_types[item['query_type']].from_ui(scenario, termination, item['concrete_query']) for item in
+                   data['QUERY']]
         except KeyError:
             raise ParsingException('Failed to parse query.')
         return out
@@ -47,16 +38,17 @@ class Query:
 @dataclass(slots=True)
 class ActionQuery(Query):
     action: Action
-    # agent: Agent # TODO: uwzględnienie agenta i punktu w czasie 
+
+    # agent: Agent # TODO: uwzględnienie agenta i punktu w czasie
     # timepoint: int
 
     @classmethod
     def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
         try:
-            out = cls(scenario=scenario, termination=termination, 
+            out = cls(scenario=scenario, termination=termination,
                       action=Action(name=data['action']),
-                    #   agent=Agent(name=data['agent']),
-                    #   timepoint=data['time']
+                      #   agent=Agent(name=data['agent']),
+                      #   timepoint=data['time']
                       )
         except (KeyError, TypeError):
             raise ParsingException('Failed to parse action query.')

@@ -1,10 +1,9 @@
 from __future__ import annotations
-from dataclasses import dataclass
-import os,sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
-from base.exception import ParsingException
+from dataclasses import dataclass
 from typing import List
+
+from . import ParsingException
 
 
 @dataclass(slots=True)

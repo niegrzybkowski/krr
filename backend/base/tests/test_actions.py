@@ -1,7 +1,7 @@
 import unittest
 from typing import List
 
-from base import *
+from backend.base import *
 
 
 class ActionTestCase(unittest.TestCase):  # TODO: changes function names

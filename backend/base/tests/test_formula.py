@@ -1,7 +1,6 @@
 import unittest
-import unittest
-from base import Formula, State, Operator, Obs
 
+from backend.base import Formula, State, Obs
 
 
 class FormulaTestCase(unittest.TestCase):

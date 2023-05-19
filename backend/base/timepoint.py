@@ -6,16 +6,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
 
-from base.action import Action
-from base.agent import Agent
-from base.state import State
-
-from base.exception import LogicException, ParsingException
+from . import action, agent, state
+from . import LogicException, ParsingException
 
 
 @dataclass
 class Obs(list):
-    states: List[State]
+    states: List[state.State]
 
     @classmethod
     def from_ui(cls, data: dict) -> Obs:
@@ -26,9 +23,9 @@ class Obs(list):
                 if item == "and":
                     continue
                 if isinstance(item, list):
-                    states.append(State(name=item[1], holds=False))
+                    states.append(state.State(name=item[1], holds=False))
                     continue
-                states.append(State(name=item))
+                states.append(state.State(name=item))
         except Exception:
             raise ParsingException('Failed to parse obs.')
         return cls(states=states)
@@ -49,7 +46,7 @@ class Obs(list):
         if len(update_tuples_nh) != len(update_tuples_n):
             raise LogicException('Scenario is not realizable - statement contains disjoint statements')
 
-        _update = [State(name=name, holds=holds) for name, holds in update_tuples_nh]
+        _update = [state.State(name=name, holds=holds) for name, holds in update_tuples_nh]
     
         for update_element in _update:
             el = next(filter(lambda x: x.name == update_element.name, self), None)
@@ -67,13 +64,13 @@ class Obs(list):
 @dataclass(slots=True)
 class TimePoint:
     t: int
-    acs: Optional[Tuple[Action, Agent]] = None
+    acs: Optional[Tuple[action.Action, agent.Agent]] = None
     obs: Optional[Obs] = None
 
     @classmethod
     def from_ui(cls, data: dict) -> List[TimePoint]:
         try:
-            out = [TimePoint(t=item['time'], acs=(Action(item['action']), Agent(name=item['agent']))) for item in data['ACS']]
+            out = [TimePoint(t=item['time'], acs=(action.Action(item['action']), agent.Agent(name=item['agent']))) for item in data['ACS']]
             acs_t = list(map(lambda x: x.t, out))
             obs = [(item['time'], Obs.from_ui(item)) for item in data['OBS']]
             for _obs in obs:

@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import os,sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
 from copy import deepcopy as copy
 from dataclasses import dataclass
 from typing import List
 
-from base.agent import Agent
-from base.statement import Statement, EffectStatement, ReleaseStatement
-import base.timepoint
-from base.exception import ParsingException
+from . import agent as ag, timepoint as tp, statement as st
+from . import ParsingException
 
 
 @dataclass(slots=True)
@@ -27,17 +22,17 @@ class Action:
         return out
 
     def run(
-            self, agent: Agent, obs: base.timepoint.Obs, statements: List[Statement]
-    ) -> List[base.timepoint.Obs]:
+            self, agent: ag.Agent, obs: tp.Obs, statements: List[st.Statement]
+    ) -> List[tp.Obs]:
         """run action by agent if """
         postconditions = [[]]
-        for _statement in filter(lambda x: isinstance(x, EffectStatement), statements):
+        for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition.bool(obs=obs):
                 agent.active = True
                 self.performed = True
                 postconditions[0].extend(copy(_statement.postcondition))
 
-        for _statement in filter(lambda x: isinstance(x, ReleaseStatement), statements):
+        for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
             if _statement.precondition.bool(obs=obs):
                 agent.active = True
                 self.performed = True
@@ -56,8 +51,8 @@ class Action:
         new_obs = []
         for postcondition in postconditions:
             # update states with all postconditions that can be applied
-            temp = base.timepoint.Obs(states=copy(obs.states))
-            temp |= base.timepoint.Obs(states=postcondition)
+            temp = tp.Obs(states=copy(obs.states))
+            temp |= tp.Obs(states=postcondition)
             new_obs.append(temp)
 
         return new_obs
