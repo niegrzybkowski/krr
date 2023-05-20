@@ -140,6 +140,36 @@ class FormulaTestCase(unittest.TestCase):
         # then
         self.assertFalse(ans, msg="Formula was false")
 
+    def test_student_obs(self):
+        # given
+        formula = Formula(structure=[
+            [
+                [
+                    "not",
+                    "student tired"
+                ],
+                "and",
+                [
+                    "not",
+                    "student in house"
+                ],
+                "and",
+                [
+                    "not",
+                    "professor at university"
+                ],
+                "and",
+                [
+                    "not",
+                    "student at university"
+                ]
+            ]
+        ])
+        # when
+        possibilities = formula.get_all_possibilities()
+        # then
+        self.assertEqual(len(possibilities), 1)
+
     def test_given_singular_when_all_possibilities_then_gives_one(self):
         # given
         formula = Formula([
@@ -147,7 +177,7 @@ class FormulaTestCase(unittest.TestCase):
         ]
         )
         # when
-        possibilities = formula.get_all_posibilites()
+        possibilities = formula.get_all_possibilities()
         # then
         self.assertEqual(len(possibilities), 1)
 
@@ -163,7 +193,7 @@ class FormulaTestCase(unittest.TestCase):
         self.assertCountEqual(
             [
                 Obs(states=[State(name='a', holds=True)])
-                ], 
+            ],
             possibilities)
 
     def test_given_simple_when_all_possibilities_then_gives_three(self):
@@ -196,10 +226,13 @@ class FormulaTestCase(unittest.TestCase):
         # then
         self.assertCountEqual(
             [
-                Obs(states=[State(name='a', holds=True), State(name='b', holds=True)]),
-                Obs(states=[State(name='a', holds=True), State(name='b', holds=False)]),
-                Obs(states=[State(name='a', holds=False), State(name='b', holds=True)]),
-                ], 
+                Obs(states=[State(name='a', holds=True),
+                    State(name='b', holds=True)]),
+                Obs(states=[State(name='a', holds=True),
+                    State(name='b', holds=False)]),
+                Obs(states=[State(name='a', holds=False),
+                    State(name='b', holds=True)]),
+            ],
             possibilities)
 
     def test_given_nested_when_all_possibilities_then_gives_two(self):
@@ -240,9 +273,11 @@ class FormulaTestCase(unittest.TestCase):
         # then
         self.assertCountEqual(
             [
-                [State(name='a', holds=True), State(name='b', holds=True), State(name='c', holds=True)],
-                [State(name='a', holds=True), State(name='b', holds=False), State(name='c', holds=False)],
-                ],
+                [State(name='a', holds=True), State(
+                    name='b', holds=True), State(name='c', holds=True)],
+                [State(name='a', holds=True), State(
+                    name='b', holds=False), State(name='c', holds=False)],
+            ],
             list(map(lambda x: x.states, possibilities)))
 
 
