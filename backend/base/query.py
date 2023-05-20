@@ -42,30 +42,35 @@ class Query:
         first_t: int = self.scenario.get_first_t()
         cur_models: List[QuasiModel] = [
             QuasiModel(
-                path=[
-                    TimePoint(
-                        t=first_t,
-                        obs=obs
-                    ) for obs in cur_obs])
+                path=[TimePoint(
+                    t=first_t,
+                    obs=obs
+                )]) for obs in cur_obs
         ]
 
         for t, timepoint in self.scenario.timepoints.items():
-            if not timepoint.is_acs():
-                continue
             if t > self.termination:
                 break
 
             if timepoint.is_obs():
+                possible_obs: List[Obs] = timepoint.obs.get_all_possibilities()
                 cur_models = list(
-                    filter(lambda model: model.get_last_timepoint().obs.is_superset(timepoint.obs),
+                    filter(
+                        lambda model: any(
+                            list(
+                                map(lambda _other: _other.is_superset(model.get_last_timepoint().obs), possible_obs))),
                            cur_models)
                 )
                 if len(cur_models) == 0:
                     raise LogicException('This scenario is not realizable')
 
+            if not timepoint.is_acs():
+                continue
+
             action, agent = timepoint.acs
 
-            statements: List[Statement] = get_statements(action, agent, self.scenario.statements)
+            statements: List[Statement] = get_statements(
+                action, agent, self.scenario.statements)
 
             # cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
             new_models = []
@@ -130,7 +135,8 @@ class ActionQuery(Query):
 
             action, agent = timepoint.acs
 
-            statements: List[Statement] = get_statements(action, agent, self.scenario.statements)
+            statements: List[Statement] = get_statements(
+                action, agent, self.scenario.statements)
 
             cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
             flatten = flatten_list(cur_obs)
@@ -201,7 +207,8 @@ class FluentQuery(Query):
                 __state: State = next(
                     filter(lambda item: item.name == _state.name, el), None)
                 if __state is None:
-                    raise LogicException(f'State {_state.name} was not found in OBS')
+                    raise LogicException(
+                        f'State {_state.name} was not found in OBS')
                 res.append(__state)
             return res
 
@@ -218,7 +225,8 @@ class FluentQuery(Query):
 
 
 def get_statements(action, agent, statements) -> List[Statement]:
-    filtered_statements = list(filter(lambda x: x.action == action and x.agent == agent, statements))
+    filtered_statements = list(
+        filter(lambda x: x.action == action and x.agent == agent, statements))
     return filtered_statements
 
 
@@ -265,7 +273,8 @@ class AgentQuery(Query):
 
             action, agent = timepoint.acs
 
-            statements: List[Statement] = get_statements(action, agent, self.scenario.statements)
+            statements: List[Statement] = get_statements(
+                action, agent, self.scenario.statements)
 
             cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
             flatten = flatten_list(cur_obs)

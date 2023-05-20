@@ -47,7 +47,7 @@ class Scenario:
         if not self.timepoints[k].is_obs():
             return all_states
         states = []
-        possible_obs = self.timepoints[k].obs.get_all_possibilities()
+        possible_obs: List[Obs] = self.timepoints[k].obs.get_all_possibilities()
         
         states = list(
             filter(
