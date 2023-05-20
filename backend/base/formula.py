@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 
 from . import State
-from . import timepoint as tp  # Obs
+from . import timepoint as tp
 
 from . import exception as exc
 from dataclasses import field, dataclass
@@ -55,6 +55,12 @@ def flatten(items):
         else:
             yield x
 
+def _get_all_possibilities(states: List[str]) -> List[tp.Obs]:
+    return [
+        tp.Obs([
+            State(state_name, holds=permutation[i]) for i, state_name in enumerate(states)
+        ]) for permutation in itertools.product([True, False], repeat=len(states))]
+
 
 @dataclass(slots=True)
 class Formula:
@@ -71,17 +77,12 @@ class Formula:
     def extract_states(self) -> List[str]:
         keywords = set(el for el in list(Operator.map_methods.keys()))
         filtered = set(filter(lambda x: x not in keywords, flatten(self.structure)))
-        return list(filtered)
+        return sorted(list(filtered))
 
-    def get_all_posibilites(self) -> List[tp.Obs]:
+    def get_all_possibilities(self) -> List[tp.Obs]:
         states = self.extract_states()
-        true_states = []
-        for permutation in itertools.product([True, False], repeat=len(states)):
-            actual_obs_state = [State(state_name, holds=permutation[i])
-                                for i, state_name in enumerate(states)]
-            obs = tp.Obs(actual_obs_state)
-            if self.bool(obs):
-                true_states.append(obs)
+        true_states = [obs for obs in _get_all_possibilities(states) if self.bool(obs)]
+
         return true_states
 
     def bool(self, obs: tp.Obs):
