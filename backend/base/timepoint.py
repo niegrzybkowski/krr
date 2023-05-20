@@ -6,13 +6,24 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
 
-from . import action, agent, state
+from . import action, agent, state, formula
 from . import LogicException, ParsingException
 
 
-@dataclass
+@dataclass(slots=True)
 class Obs(list):
-    states: List[state.State]
+    states: List[state.State] = None
+    formula: formula.Formula = None
+
+    def __post_init__(self) -> None:
+        # extract all states from formula
+        # if formula:
+        #   states = ...
+        pass
+
+    def get_all_possibilities(self) -> List[Obs]:
+        # return formula.get_all_possibilities()
+        pass
 
     @classmethod
     def from_ui(cls, data: dict) -> Obs:
@@ -30,10 +41,16 @@ class Obs(list):
             raise ParsingException('Failed to parse obs.')
         return cls(states=states)
 
+    def is_superset(self, other: Obs) -> bool:
+        for _state in self.states:
+            if _state not in other.states:
+                return False
+        return True
+
     def __iter__(self):
         return list.__iter__(self.states)
 
-    def __ior__(self, other) -> None:
+    def __ior__(self, other) -> Obs:
         """validation state unique by name and holds
 
         Example:

@@ -11,6 +11,7 @@ from . import LogicException, ParsingException
 class Query:
     scenario: Scenario
     termination: int
+    states: List[State] = None
 
     @classmethod
     def from_ui(cls, scenario, termination, data: dict) -> List[ActionQuery | FluentQuery | AgentQuery]:
@@ -26,8 +27,59 @@ class Query:
             raise ParsingException('Failed to parse query.')
         return out
 
-    def run(self) -> str:
-        raise NotImplementedError()
+    def run(self) -> List[QuasiModel]:
+
+        cur_obs: List[Obs] = self.scenario.get_first_obs(states=self.states)
+        first_t: int = self.scenario.get_first_t()
+        cur_models: List[QuasiModel] = [
+            QuasiModel(
+                path=[
+                    TimePoint(
+                        t=first_t,
+                        obs=obs
+                    ) for obs in cur_obs])
+        ]
+
+        for t, timepoint in self.scenario.timepoints.items():
+            if not timepoint.is_acs():
+                continue
+            if t > self.termination:
+                break
+
+            if timepoint.is_obs():
+                cur_models = list(
+                    filter(lambda model: model.get_last_timepoint().obs.is_superset(timepoint.obs),
+                           cur_models)
+                )
+
+            action, agent = timepoint.acs
+
+            statements: List[Statement] = get_statements(action, agent, self.scenario.statements)
+
+            # cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
+            new_models = []
+            for model in cur_models:
+                tp = model.get_last_timepoint()
+                _res: List[Obs] = action.run(agent, tp.obs, statements)
+                if _res:
+                    for _obs in _res:
+                        # create
+                        new_tp = TimePoint(
+                            t=tp.t + 1,
+                            obs=_obs,
+                            acs=(action, agent)
+                        )
+                        new_path = copy.deepcopy(model.path)
+                        new_path.append(new_tp)
+                        new_models.append(QuasiModel(new_path))
+                else:
+                    new_models.append(model)
+
+            # flatten = flatten_list(cur_obs)
+            # cur_obs = eliminate_duplicates(flatten)
+
+            cur_models = new_models
+        return cur_models
 
     def is_valid(self) -> None:
         # raise LogicException("...")
@@ -74,7 +126,7 @@ class ActionQuery(Query):
             cur_obs = eliminate_duplicates(flatten)
 
             if action == self.action:
-                is_performed = bool(self.action)
+                is_performed = bool(action)
             if is_performed:
                 break
 

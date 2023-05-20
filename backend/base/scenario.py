@@ -35,17 +35,28 @@ class Scenario:
     def is_realisable(self) -> bool:
         return True
 
-    def get_first_obs(self, quiet=False) -> Optional[Obs]:
-        try:
-            k = list(self.timepoints.keys())[0]
-            if not self.timepoints[k].is_obs():
-                raise LogicException()
-            return self.timepoints[k].obs
-        except (IndexError, LogicException) as e:
-            if not quiet:
-                raise LogicException('OBS must be defined before any action can be performed (ACS).')
-            else:
-                return None
+    def get_first_obs(self, states) -> List[Obs]:
+        k = next(iter(self.timepoints.keys()), None)
+        if k is None:
+            raise LogicException('ACS or OBS must be provided')
+
+        all_states: List[Obs] = get_combinations(states)
+        if not self.timepoints[k].is_obs():
+            return all_states
+
+        states = list(
+            filter(lambda obs: obs.is_superset(self.timepoints[k].obs),
+                   all_states)
+        )
+        return states
+
+
+    def get_first_t(self):
+        k = next(iter(self.timepoints.values()), None)
+        if k is None:
+            raise LogicException('ACS or OBS must be provided')
+        else:
+            return k.t
 
     def __len__(self):
         return len(self.timepoints)

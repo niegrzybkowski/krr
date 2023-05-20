@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from copy import deepcopy as copy
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
-from . import agent as ag, timepoint as tp, statement as st
+from . import agent as ag, timepoint as tp, statement as st, state as state
 from . import ParsingException
 
 
@@ -28,22 +28,20 @@ class Action:
         postconditions = [[]]
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition.bool(obs=obs):
-                agent.active = True
-                self.performed = True
-                postconditions[0].extend(copy(_statement.postcondition))
+                for post_obs in _statement.postconditions:
+                    postconditions.append(post_obs.states)
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
+            # _statement: state.State
             if _statement.precondition.bool(obs=obs):
-                agent.active = True
-                self.performed = True
 
-                psc = []
+                psc: List[List[state.State]] = []
                 psc2 = []
                 for postcondition in postconditions:
                     temp = copy(postcondition)
                     temp.extend(copy(_statement.postcondition))
-                    psc2.append(temp)
                     psc.append(copy(postcondition))
+                    psc2.append(temp)
 
                 postconditions.extend(psc)
                 postconditions.extend(psc2)
@@ -59,6 +57,3 @@ class Action:
 
     def __eq__(self, other: Action) -> bool:
         return self.name == other.name
-
-    def __bool__(self) -> bool:
-        return self.performed

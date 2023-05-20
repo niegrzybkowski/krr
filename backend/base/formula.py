@@ -5,7 +5,7 @@ from . import timepoint as tp  # Obs
 
 from . import exception as exc
 from dataclasses import field, dataclass
-from typing import Union, List
+from typing import Union, List, Iterable
 
 
 class Operator:
@@ -44,6 +44,18 @@ class Operator:
         return Operator.map_methods[name]
 
 
+
+
+def flatten(items):
+    """Yield items from any nested iterable; see Reference."""
+    for x in items:
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+            for sub_x in flatten(x):
+                yield sub_x
+        else:
+            yield x
+
+
 @dataclass(slots=True)
 class Formula:
     structure: List[Union[str, str]] = field(default_factory=list)
@@ -55,6 +67,11 @@ class Formula:
         except KeyError:
             raise exc.ParsingException('Failed to parse precondition.')
         return cls(structure=out)
+
+    def extract_states(self) -> List[str]:
+        keywords = set(el for el in list(Operator.map_methods.keys()))
+        filtered = set(filter(lambda x: x not in keywords, flatten(self.structure)))
+        return list(filtered)
 
     def bool(self, obs: tp.Obs):
         if not self.structure:
