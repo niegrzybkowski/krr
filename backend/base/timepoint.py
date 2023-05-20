@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import os,sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
 
@@ -64,7 +61,7 @@ class Obs(list):
             raise LogicException('Scenario is not realizable - statement contains disjoint statements')
 
         _update = [state.State(name=name, holds=holds) for name, holds in update_tuples_nh]
-    
+
         for update_element in _update:
             el = next(filter(lambda x: x.name == update_element.name, self), None)
             if el is None:
@@ -87,7 +84,8 @@ class TimePoint:
     @classmethod
     def from_ui(cls, data: dict) -> List[TimePoint]:
         try:
-            out = [TimePoint(t=item['time'], acs=(action.Action(item['action']), agent.Agent(name=item['agent']))) for item in data['ACS']]
+            out = [TimePoint(t=item['time'], acs=(action.Action(item['action']), agent.Agent(name=item['agent']))) for
+                   item in data['ACS']]
             acs_t = list(map(lambda x: x.t, out))
             obs = [(item['time'], Obs.from_ui(item)) for item in data['OBS']]
             for _obs in obs:
@@ -105,3 +103,4 @@ class TimePoint:
 
     def is_obs(self):
         return self.obs is not None
+

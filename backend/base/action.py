@@ -11,7 +11,6 @@ from . import ParsingException
 @dataclass(slots=True)
 class Action:
     name: str
-    performed: bool = False
 
     @classmethod
     def from_ui(cls, data: dict) -> List[Action]:
@@ -22,10 +21,10 @@ class Action:
         return out
 
     def run(
-            self, agent: ag.Agent, obs: tp.Obs, statements: List[st.Statement]
+            self, obs: tp.Obs, statements: List[st.Statement]
     ) -> List[tp.Obs]:
         """run action by agent if """
-        postconditions = [[]]
+        postconditions: List[List[state.State]] = []
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition.bool(obs=obs):
                 for post_obs in _statement.postconditions:

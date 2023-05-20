@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
-from . import State, Scenario, Agent, Statement, Obs, Action
 from . import LogicException, ParsingException
+from . import State, Scenario, Agent, Statement, Obs, Action, TimePoint
+
+
+@dataclass(slots=True)
+class QuasiModel:
+    path: List[TimePoint]
+
+    def get_last_timepoint(self):
+        return self.path[-1]
 
 
 @dataclass(slots=True)

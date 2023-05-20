@@ -74,6 +74,7 @@ class Formula:
         return list(filtered)
 
     def bool(self, obs: tp.Obs):
+
         if not self.structure:
             return True
 

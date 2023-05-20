@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from abc import ABC
 from dataclasses import dataclass
 from typing import List
@@ -55,9 +56,21 @@ class Statement(ABC):
 
 @dataclass(slots=True)
 class EffectStatement(Statement):
-    postcondition: List[state.State]
+    formula: formula.Formula
+    postcondition: List[timepoint.Obs] = None
+
+    def __post_init__(self):  # TODO: kurwa to jest masło maślane
+        states = self.formula.extract_states()
+        true_states = []
+        for permutation in itertools.permutations([True, False], len(states)):
+            actual_obs_state = [state.State(state_name, holds=permutation[i])
+                                for i, state_name in enumerate(states)]
+            obs = timepoint.Obs(actual_obs_state)
+            if self.formula.bool(obs):
+                true_states.append(obs)
+        self.postcondition = true_states
 
 
 @dataclass(slots=True)
 class ReleaseStatement(Statement):
-    postcondition: List[state.State]
+    postcondition: state.State
