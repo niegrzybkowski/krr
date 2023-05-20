@@ -60,6 +60,8 @@ class Query:
                     filter(lambda model: model.get_last_timepoint().obs.is_superset(timepoint.obs),
                            cur_models)
                 )
+                if len(cur_models) == 0:
+                    raise LogicException('This scenario is not realizable')
 
             action, agent = timepoint.acs
 
