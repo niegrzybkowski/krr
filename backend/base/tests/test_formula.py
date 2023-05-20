@@ -140,6 +140,51 @@ class FormulaTestCase(unittest.TestCase):
         # then
         self.assertFalse(ans, msg="Formula was false")
 
+    def test_given_singular_when_all_possibilities_then_gives_two(self):
+        # given
+        formula = Formula([
+            "a"
+        ]
+        )
+        # when
+        possibilities = formula.get_all_posibilites()
+        # then
+        self.assertEqual(len(possibilities), 1)
+
+    def test_given_simple_when_all_possibilities_then_gives_two(self):
+        # given
+        formula = Formula([
+            [
+                "a",
+                "or",
+                "b"
+            ]
+        ]
+        )
+        # when
+        possibilities = formula.get_all_posibilites()
+        # then
+        self.assertEqual(len(possibilities), 3)
+
+    def test_given_nested_when_all_possibilities_then_gives_two(self):
+        # given
+        formula = Formula([
+            [
+                "a",
+                "and",
+                [
+                    "b",
+                    "if and only if",
+                    "c",
+                ]
+            ]
+        ]
+        )
+        # when
+        possibilities = formula.get_all_posibilites()
+        # then
+        self.assertEqual(len(possibilities), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import itertools
+
 from . import State
 from . import timepoint as tp  # Obs
 
@@ -44,8 +46,6 @@ class Operator:
         return Operator.map_methods[name]
 
 
-
-
 def flatten(items):
     """Yield items from any nested iterable; see Reference."""
     for x in items:
@@ -72,6 +72,17 @@ class Formula:
         keywords = set(el for el in list(Operator.map_methods.keys()))
         filtered = set(filter(lambda x: x not in keywords, flatten(self.structure)))
         return list(filtered)
+
+    def get_all_posibilites(self) -> List[tp.Obs]:
+        states = self.extract_states()
+        true_states = []
+        for permutation in itertools.product([True, False], repeat=len(states)):
+            actual_obs_state = [State(state_name, holds=permutation[i])
+                                for i, state_name in enumerate(states)]
+            obs = tp.Obs(actual_obs_state)
+            if self.bool(obs):
+                true_states.append(obs)
+        return true_states
 
     def bool(self, obs: tp.Obs):
 

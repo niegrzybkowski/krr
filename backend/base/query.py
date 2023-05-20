@@ -98,7 +98,7 @@ class Query:
 
 @dataclass(slots=True)
 class ActionQuery(Query):
-    action: Action
+    action: Action = None
 
     # agent: Agent # TODO: uwzględnienie agenta i punktu w czasie
     # timepoint: int
@@ -147,9 +147,9 @@ class ActionQuery(Query):
 
 @dataclass(slots=True)
 class FluentQuery(Query):
-    fluent: State  # TODO: confirm whether fluent can be formula - PM it don't think so
-    timepoint: int
-    mode: str  # 'necessary', 'possibly'
+    fluent: State = None
+    timepoint: int = None
+    mode: str = None  # 'necessary', 'possibly'
 
     @classmethod
     def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
@@ -237,7 +237,7 @@ def eliminate_duplicates(_list: List[Obs]) -> List[Obs]:
 
 @dataclass(slots=True)
 class AgentQuery(Query):
-    agent: Agent
+    agent: Agent = None
 
     @classmethod
     def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
