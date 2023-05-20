@@ -60,7 +60,7 @@ class EffectStatement(Statement):
     postcondition: List[timepoint.Obs] = None
 
     def __post_init__(self):
-        self.postcondition = self.formula.get_all_posibilites()
+        self.postcondition = self.formula.get_all_possibilities()
 
 
 @dataclass(slots=True)

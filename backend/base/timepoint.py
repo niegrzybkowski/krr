@@ -12,15 +12,8 @@ class Obs(list):
     states: List[state.State] = None
     formula: formula.Formula = None
 
-    def __post_init__(self) -> None:
-        # extract all states from formula
-        # if formula:
-        #   states = ...
-        pass
-
     def get_all_possibilities(self) -> List[Obs]:
-        # return formula.get_all_possibilities()
-        pass
+        return self.formula.get_all_possibilities()
 
     @classmethod
     def from_ui(cls, data: dict) -> Obs:
