@@ -4,7 +4,7 @@ from backend.base import scenario
 from backend.base.action import Action
 from backend.base.agent import Agent
 from backend.base.formula import Formula
-from backend.base.query import Query, ActionQuery, AgentQuery
+from backend.base.query import Query, ActionQuery, AgentQuery, FluentQuery
 from backend.base.state import State
 
 from backend.base.statement import EffectStatement, ReleaseStatement, Statement
@@ -29,90 +29,57 @@ class QueryTestCase(unittest.TestCase):
             State(name='letter delivered'),
             State(name='letter read'),
         ]
+        self.scenario = scenario.Scenario.from_timepoints(
+            statements=self.statements,
+            timepoints=[
+                TimePoint(
+                    t=0,
+                    obs=Obs(formula=Formula(structure=[
+                        [
+                            "not",
+                            "letter sent"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter ready"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter read"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter delivered"
+                        ]
+                    ]))),
+                TimePoint(
+                    t=1, acs=(Action('write letter'), Agent('Sender'))),
+                TimePoint(
+                    t=2, acs=(Action('send letter'), Agent('Sender'))),
+                TimePoint(
+                    t=3, acs=(Action('deliver letter'), Agent('Postman'))),
+                TimePoint(
+                    t=4, acs=(Action('read letter'), Agent('Receiver'))),
+            ])
 
     def test_given_obs_same_states(self):
         # given
         query = Query(
-            scenario=scenario.Scenario.from_timepoints(
-                statements=self.statements,
-                timepoints=[
-                    TimePoint(
-                        t=0,
-                        obs=Obs(formula=Formula(structure=[
-                            [
-                                "not",
-                                "letter sent"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter ready"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter read"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter delivered"
-                            ]
-                        ]))),
-                    TimePoint(
-                        t=1, acs=(Action('write letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=2, acs=(Action('send letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=3, acs=(Action('deliver letter'), Agent('Postman'))),
-                    TimePoint(
-                        t=4, acs=(Action('read letter'), Agent('Receiver'))),
-                ]),
+            scenario=self.scenario,
             termination=100, states=self.states)
         # when
         results = query.run()
         # then
-        self.assertTrue(True)
+        self.assertEqual(len(results), 2)
 
     def test_when_action_query_given_run_then_action_performed(self):
         # given
         query = ActionQuery(
-            scenario=scenario.Scenario.from_timepoints(
-                statements=self.statements,
-                timepoints=[
-                    TimePoint(
-                        t=0,
-                        obs=Obs(formula=Formula(structure=[
-                            [
-                                "not",
-                                "letter sent"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter ready"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter read"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter delivered"
-                            ]
-                        ]))),
-                    TimePoint(
-                        t=1, acs=(Action('write letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=2, acs=(Action('send letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=3, acs=(Action('deliver letter'), Agent('Postman'))),
-                    TimePoint(
-                        t=4, acs=(Action('read letter'), Agent('Receiver'))),
-                ]),
-            termination=5, states=self.states, action=Action('write letter'), timepoint=1)
+            scenario=self.scenario,
+            termination=5, states=self.states, action=Action('write letter'), time=1)
         # when
         result = query.run()
         # then
@@ -121,42 +88,8 @@ class QueryTestCase(unittest.TestCase):
     def test_when_action_query_given_run_then_action_not_performed(self):
         # given
         query = ActionQuery(
-            scenario=scenario.Scenario.from_timepoints(
-                statements=self.statements,
-                timepoints=[
-                    TimePoint(
-                        t=0,
-                        obs=Obs(formula=Formula(structure=[
-                            [
-                                "not",
-                                "letter sent"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter ready"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter read"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter delivered"
-                            ]
-                        ]))),
-                    TimePoint(
-                        t=1, acs=(Action('write letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=2, acs=(Action('send letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=3, acs=(Action('deliver letter'), Agent('Postman'))),
-                    TimePoint(
-                        t=4, acs=(Action('read letter'), Agent('Receiver'))),
-                ]),
-            termination=5, states=self.states, action=Action('write letter'), timepoint=3)
+            scenario=self.scenario,
+            termination=5, states=self.states, action=Action('write letter'), time=3)
         # when
         result = query.run()
         # then
@@ -165,87 +98,55 @@ class QueryTestCase(unittest.TestCase):
     def test_when_agent_query_given_run_then_action_performed(self):
         # given
         query = AgentQuery(
-            scenario=scenario.Scenario.from_timepoints(
-                statements=self.statements,
-                timepoints=[
-                    TimePoint(
-                        t=0,
-                        obs=Obs(formula=Formula(structure=[
-                            [
-                                "not",
-                                "letter sent"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter ready"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter read"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter delivered"
-                            ]
-                        ]))),
-                    TimePoint(
-                        t=1, acs=(Action('write letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=2, acs=(Action('send letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=3, acs=(Action('deliver letter'), Agent('Postman'))),
-                    TimePoint(
-                        t=4, acs=(Action('read letter'), Agent('Receiver'))),
-                ]),
+            scenario=self.scenario,
             termination=5, states=self.states, agent=Agent('Postman'))
         # when
         result = query.run()
         # then
         self.assertEqual(result, f"Agent Postman is active in this Scenario")
 
-    def test_when_action_query_given_run_then_action_not_performed(self):
+    def test_when_agent_query_given_run_then_agent_not_active(self):
         # given
         query = AgentQuery(
-            scenario=scenario.Scenario.from_timepoints(
-                statements=self.statements,
-                timepoints=[
-                    TimePoint(
-                        t=0,
-                        obs=Obs(formula=Formula(structure=[
-                            [
-                                "not",
-                                "letter sent"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter ready"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter read"
-                            ],
-                            "and",
-                            [
-                                "not",
-                                "letter delivered"
-                            ]
-                        ]))),
-                    TimePoint(
-                        t=1, acs=(Action('write letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=2, acs=(Action('send letter'), Agent('Sender'))),
-                    TimePoint(
-                        t=3, acs=(Action('deliver letter'), Agent('Postman'))),
-                    TimePoint(
-                        t=4, acs=(Action('read letter'), Agent('Receiver'))),
-                ]),
+            scenario=self.scenario,
             termination=5, states=self.states, agent=Agent('Kaka'))
         # when
         result = query.run()
         # then
         self.assertEqual(result, f"Agent Kaka is not active in this Scenario")
+
+    def test_when_fluent_query_given_run_then_necessary_at_t(self):
+        # given
+        query = FluentQuery(
+            scenario=self.scenario,
+            termination=5, states=self.states, fluent=State('letter sent'),
+            mode='necessary', time=3
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Fluent letter sent always holds at t=3")
+
+    def test_when_fluent_query_given_run_then_possible_at_t(self):
+        # given
+        query = FluentQuery(
+            scenario=self.scenario,
+            termination=5, states=self.states, fluent=State('letter delivered'),
+            mode='possibly', time=5
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Fluent letter delivered sometimes holds at t=5")
+
+    def test_when_fluent_query_given_run_then_not_hold_at_t(self):
+        # given
+        query = FluentQuery(
+            scenario=self.scenario,
+            termination=5, states=self.states, fluent=State('letter delivered'),
+            mode='possibly', time=2
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Fluent letter delivered never holds at t=2")

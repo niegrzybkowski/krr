@@ -37,6 +37,9 @@ class Obs(list):
                 return False
         return True
 
+    def get_state_by_name(self, name):
+        return next(filter(lambda _state: _state.name == name, self.states))
+
     def __iter__(self):
         return list.__iter__(self.states)
 
@@ -96,4 +99,3 @@ class TimePoint:
 
     def is_obs(self):
         return self.obs is not None
-

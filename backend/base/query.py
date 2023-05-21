@@ -15,23 +15,36 @@ class QuasiModel:
     def get_last_timepoint(self):
         return self.path[-1]
 
-    def is_performing_action_in_t(self, action: Action, time: int):
+    def is_performing_action_in_t(self, action: Action, time: int) -> bool:
         for timepoint in self.path:
             if timepoint.t == time and timepoint.acs[0] == action:
                 return True
         return False
 
-    def is_agent_active(self, agent: Agent):
+    def is_agent_active(self, agent: Agent) -> bool:
         for timepoint in self.path:
             if timepoint.acs is not None and timepoint.acs[1] == agent:
                 return True
         return False
+
+    def extract_fluent(self, state: State, time: int) -> List[State]:
+        for timepoint in self.path:
+            if timepoint.t <= time:
+                fluent = timepoint.obs.get_state_by_name(state.name)
+        return fluent
+
+
+def get_statements(action, agent, statements) -> List[Statement]:
+    filtered_statements = list(
+        filter(lambda x: x.action == action and x.agent == agent, statements))
+    return filtered_statements
 
 
 @dataclass(slots=True)
 class Query:
     scenario: Scenario
     termination: int
+
     states: List[State] = None
 
     @classmethod
@@ -118,7 +131,7 @@ class Query:
 @dataclass(slots=True)
 class ActionQuery(Query):
     action: Action = None
-    timepoint: int = None
+    time: int = None
 
     @classmethod
     def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
@@ -126,7 +139,7 @@ class ActionQuery(Query):
             out = cls(
                 scenario=scenario, termination=termination,
                 action=Action(name=data['action']),
-                timepoint=data['time']
+                time=data['time']
             )
         except (KeyError, TypeError):
             raise ParsingException('Failed to parse action query.')
@@ -137,27 +150,28 @@ class ActionQuery(Query):
         is_performed = False
         if len(models) != 0:
             for model in models:
-                if model.is_performing_action_in_t(self.action, self.timepoint):
+                if model.is_performing_action_in_t(self.action, self.time):
                     is_performed = True
 
         if is_performed:
-            return f"Action {self.action.name} is performed in moment {self.timepoint} in this Scenario"
+            return f"Action {self.action.name} is performed in moment {self.time} in this Scenario"
 
-        return f"Action {self.action.name} is not performed in moment {self.timepoint} in this Scenario"
+        return f"Action {self.action.name} is not performed in moment {self.time} in this Scenario"
 
 
 @dataclass(slots=True)
 class FluentQuery(Query):
     fluent: State = None
-    timepoint: int = None
+    time: int = None
+
     mode: str = None  # 'necessary', 'possibly'
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
+    def from_ui(cls, scenario, termination, data: dict) -> FluentQuery:
         try:
             out = cls(scenario=scenario, termination=termination,
                       fluent=State(name=data['condition']),
-                      timepoint=data['time'],
+                      time=data['time'],
                       mode=data['kind']
                       )
         except (KeyError, TypeError):
@@ -172,55 +186,16 @@ class FluentQuery(Query):
                 "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
 
     def run(self) -> str:
-        # super().is_valid()
-
-        cur_obs = [self.scenario.get_first_obs()]
-        if self.timepoint > self.termination:
-            return "It is impossible to determine since considered " \
-                   f"timepoint is greater than termination ({self.timepoint} > {self.termination})"
-
-        for t, timepoint in self.scenario.timepoints.items():
-            if not timepoint.is_acs():
-                continue
-            if t >= self.timepoint:
-                break
-
-            action, agent = timepoint.acs
-
-            statements: List[Statement] = get_statements(
-                action, agent, self.scenario.statements)
-
-            cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
-            flatten = flatten_list(cur_obs)
-            cur_obs = eliminate_duplicates(flatten)
-
-        def __getStatesByName(_list: List[Obs], _state: State) -> List[State]:
-            res = []
-            for el in _list:
-                __state: State = next(
-                    filter(lambda item: item.name == _state.name, el), None)
-                if __state is None:
-                    raise LogicException(
-                        f'State {_state.name} was not found in OBS')
-                res.append(__state)
-            return res
-
-        cur_states = __getStatesByName(cur_obs, self.fluent)
-
-        if self.mode == 'necessary':
-            if all(cur_states):
-                return f"Fluent {self.fluent.name} always holds at t={self.timepoint}"
-            return f"Fluent {self.fluent.name} doesn't always hold at t={self.timepoint}"
-        # 'possibly':
-        if any(cur_states):
-            return f"Fluent {self.fluent.name} sometimes holds at t={self.timepoint}"
-        return f"Fluent {self.fluent.name} never holds at t={self.timepoint}"
-
-
-def get_statements(action, agent, statements) -> List[Statement]:
-    filtered_statements = list(
-        filter(lambda x: x.action == action and x.agent == agent, statements))
-    return filtered_statements
+        models = super(FluentQuery, self).run()
+        if len(models) != 0:
+            fluents = [model.extract_fluent(self.fluent, self.time) for model in models]
+            if self.mode == 'necessary':
+                if all(fluents):
+                    return f"Fluent {self.fluent.name} always holds at t={self.time}"
+                return f"Fluent {self.fluent.name} doesn't always hold at t={self.time}"
+            if any(fluents):
+                return f"Fluent {self.fluent.name} sometimes holds at t={self.time}"
+            return f"Fluent {self.fluent.name} never holds at t={self.time}"
 
 
 def flatten_list(_list: List[List[Obs]]) -> List[Obs]:
@@ -243,11 +218,10 @@ class AgentQuery(Query):
     agent: Agent = None
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
+    def from_ui(cls, scenario, termination, data: dict) -> AgentQuery:
         try:
             out = cls(scenario=scenario, termination=termination,
-                      agent=Agent(name=data['agent'])
-                      )
+                      agent=Agent(name=data['agent']))
         except (KeyError, TypeError):
             raise ParsingException('Failed to parse agent query.')
         return out
