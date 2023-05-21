@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
 from . import LogicException, ParsingException
 from . import State, Scenario, Agent, Statement, Obs, Action, TimePoint
@@ -14,6 +14,18 @@ class QuasiModel:
 
     def get_last_timepoint(self):
         return self.path[-1]
+
+    def is_performing_action_in_t(self, action: Action, time: int):
+        for timepoint in self.path:
+            if timepoint.t == time and timepoint.acs[0] == action:
+                return True
+        return False
+
+    def is_agent_active(self, agent: Agent):
+        for timepoint in self.path:
+            if timepoint.acs is not None and timepoint.acs[1] == agent:
+                return True
+        return False
 
 
 @dataclass(slots=True)
@@ -59,7 +71,7 @@ class Query:
                         lambda model: any(
                             list(
                                 map(lambda _other: _other.is_superset(model.get_last_timepoint().obs), possible_obs))),
-                           cur_models)
+                        cur_models)
                 )
                 if len(cur_models) == 0:
                     raise LogicException('This scenario is not realizable')
@@ -106,51 +118,32 @@ class Query:
 @dataclass(slots=True)
 class ActionQuery(Query):
     action: Action = None
-
-    # agent: Agent # TODO: uwzględnienie agenta i punktu w czasie
-    # timepoint: int
+    timepoint: int = None
 
     @classmethod
     def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
         try:
-            out = cls(scenario=scenario, termination=termination,
-                      action=Action(name=data['action']),
-                      #   agent=Agent(name=data['agent']),
-                      #   timepoint=data['time']
-                      )
+            out = cls(
+                scenario=scenario, termination=termination,
+                action=Action(name=data['action']),
+                timepoint=data['time']
+            )
         except (KeyError, TypeError):
             raise ParsingException('Failed to parse action query.')
         return out
 
     def run(self) -> str:
-        # super().is_valid()
+        models = super(ActionQuery, self).run()
         is_performed = False
-        cur_obs = [self.scenario.get_first_obs()]
-
-        for t, timepoint in self.scenario.timepoints.items():
-            if not timepoint.is_acs():
-                continue
-            if t > self.termination:
-                break
-
-            action, agent = timepoint.acs
-
-            statements: List[Statement] = get_statements(
-                action, agent, self.scenario.statements)
-
-            cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
-            flatten = flatten_list(cur_obs)
-            cur_obs = eliminate_duplicates(flatten)
-
-            if action == self.action:
-                is_performed = bool(action)
-            if is_performed:
-                break
+        if len(models) != 0:
+            for model in models:
+                if model.is_performing_action_in_t(self.action, self.timepoint):
+                    is_performed = True
 
         if is_performed:
-            return f"Action {self.action.name} is performed in this Scenario"
+            return f"Action {self.action.name} is performed in moment {self.timepoint} in this Scenario"
 
-        return f"Action {self.action.name} is performed in this Scenario"
+        return f"Action {self.action.name} is not performed in moment {self.timepoint} in this Scenario"
 
 
 @dataclass(slots=True)
@@ -260,31 +253,13 @@ class AgentQuery(Query):
         return out
 
     def run(self) -> str:
-        # super().is_valid()
-
-        is_active = False
-        cur_obs = [self.scenario.get_first_obs()]
-
-        for t, timepoint in self.scenario.timepoints.items():
-            if not timepoint.is_acs():
-                continue
-            if t > self.termination:
-                break
-
-            action, agent = timepoint.acs
-
-            statements: List[Statement] = get_statements(
-                action, agent, self.scenario.statements)
-
-            cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
-            flatten = flatten_list(cur_obs)
-            cur_obs = eliminate_duplicates(flatten)
-
-            if agent.name == self.agent.name:
-                is_active = bool(agent)
-
-            if is_active:
-                break
+        models = super(AgentQuery, self).run()
+        is_active = True
+        if len(models) != 0:
+            for model in models:
+                if not model.is_agent_active(self.agent):
+                    is_active = False
+                    break
 
         if is_active:
             return f"Agent {self.agent.name} is active in this Scenario"
