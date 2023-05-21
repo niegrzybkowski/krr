@@ -33,17 +33,20 @@ class Action:
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
             # _statement: state.State
             if _statement.precondition.bool(obs=obs):
-
-                psc: List[List[state.State]] = []
-                psc2 = []
-                for postcondition in postconditions:
-                    temp = copy(postcondition)
-                    temp.extend(copy(_statement.postcondition))
-                    psc.append(copy(postcondition))
-                    psc2.append(temp)
-
-                postconditions.extend(psc)
-                postconditions.extend(psc2)
+                if postconditions:
+                    psc: List[List[state.State]] = []
+                    psc2 = []
+                    for postcondition in postconditions:
+                        temp = copy(postcondition)
+                        temp.extend(copy(_statement.postcondition))
+                        psc.append(copy(postcondition))
+                        psc2.append(temp)
+                    postconditions.extend(psc)
+                    postconditions.extend(psc2)
+                else:
+                    psc = _statement.postcondition
+                    psc2 = state.State(name=psc.name, holds=not psc.holds)
+                    postconditions.extend([[psc], [psc2]])
 
         new_obs = []
         for postcondition in postconditions:
