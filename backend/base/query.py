@@ -76,7 +76,7 @@ class Query:
             new_models = []
             for model in cur_models:
                 tp = model.get_last_timepoint()
-                _res: List[Obs] = action.run(agent, tp.obs, statements)
+                _res: List[Obs] = action.run(tp.obs, statements)
                 if _res:
                     for _obs in _res:
                         # create

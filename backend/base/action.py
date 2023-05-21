@@ -27,7 +27,7 @@ class Action:
         postconditions: List[List[state.State]] = []
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition.bool(obs=obs):
-                for post_obs in _statement.postconditions:
+                for post_obs in _statement.postcondition:
                     postconditions.append(post_obs.states)
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
