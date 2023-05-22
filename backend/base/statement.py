@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import itertools
 from abc import ABC
 from dataclasses import dataclass
 from typing import List
 
-from . import action, agent, formula, state, timepoint
 from . import ParsingException
+from . import action, agent, formula, state, timepoint
 
 
 def getPrecondition(value):
