@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from copy import deepcopy as copy
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
-from . import agent as ag, timepoint as tp, statement as st, state as state
 from . import ParsingException
+from . import timepoint as tp, statement as st, state as state, exception as exc
 
 
 @dataclass(slots=True)
@@ -35,14 +35,21 @@ class Action:
             if _statement.precondition.bool(obs=obs):
                 if postconditions:
                     psc: List[List[state.State]] = []
-                    psc2 = []
-                    for postcondition in postconditions:
+                    old_postconditions = copy(postconditions)
+                    postconditions = []
+                    for postcondition in old_postconditions:
+                        if _statement.postcondition in postcondition:
+                            raise exc.LogicException('Release and Effect statement cannot be defined for '
+                                                     f'the same state ({_statement.postcondition.name})')
                         temp = copy(postcondition)
-                        temp.extend(copy(_statement.postcondition))
-                        psc.append(copy(postcondition))
-                        psc2.append(temp)
+                        temp2 = copy(postcondition)
+                        temp.append(state.State(_statement.postcondition.name, False))
+                        temp2.append(state.State(_statement.postcondition.name, True))
+                        # State(_statement.postcondition.name, False)
+                        # State(_statement.postcondition.name, True)
+                        psc.extend([temp, temp2])
+                        # psc2.append(temp2)
                     postconditions.extend(psc)
-                    postconditions.extend(psc2)
                 else:
                     psc = _statement.postcondition
                     psc2 = state.State(name=psc.name, holds=not psc.holds)
