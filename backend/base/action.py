@@ -31,7 +31,6 @@ class Action:
                     postconditions.append(post_obs.states)
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
-            # _statement: state.State
             if _statement.precondition.bool(obs=obs):
                 if postconditions:
                     psc: List[List[state.State]] = []
@@ -45,10 +44,7 @@ class Action:
                         temp2 = copy(postcondition)
                         temp.append(state.State(_statement.postcondition.name, False))
                         temp2.append(state.State(_statement.postcondition.name, True))
-                        # State(_statement.postcondition.name, False)
-                        # State(_statement.postcondition.name, True)
                         psc.extend([temp, temp2])
-                        # psc2.append(temp2)
                     postconditions.extend(psc)
                 else:
                     psc = _statement.postcondition
