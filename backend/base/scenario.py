@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List
 
 from sortedcontainers import SortedDict
 
@@ -46,7 +46,6 @@ class Scenario:
         all_states: List[Obs] = _get_all_possibilities(list(map(lambda _state: _state.name, states)))
         if not self.timepoints[k].is_obs():
             return all_states
-        states = []
         possible_obs: List[Obs] = self.timepoints[k].obs.get_all_possibilities()
         
         states = list(
