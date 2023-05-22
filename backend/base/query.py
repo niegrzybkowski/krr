@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, astuple
 from typing import List
 
 from . import LogicException, ParsingException
-from . import State, Scenario, Agent, Statement, Obs, Action, TimePoint
+from . import State, Scenario, Agent, Statement, Obs, Action, TimePoint, Formula
 
 
 @dataclass(slots=True)
@@ -17,21 +17,32 @@ class QuasiModel:
 
     def is_performing_action_in_t(self, action: Action, time: int) -> bool:
         for timepoint in self.path:
-            if timepoint.t == time and timepoint.acs[0] == action:
+            if timepoint.t - 1 == time and timepoint.acs[0] == action:
                 return True
         return False
 
     def is_agent_active(self, agent: Agent) -> bool:
+        prev_timepoint = None
         for timepoint in self.path:
-            if timepoint.acs is not None and timepoint.acs[1] == agent:
+            if timepoint.acs is not None and \
+                    timepoint.acs[1] == agent and \
+                    set(astuple(state) for state in prev_timepoint.obs.states) != \
+                    set(astuple(state) for state in timepoint.obs.states):
                 return True
+            prev_timepoint = timepoint
         return False
 
-    def extract_fluent(self, state: State, time: int) -> List[State]:
+    def condition_holds(self, possibilities: List[Obs], time: int) -> bool:
+        fluents = None
         for timepoint in self.path:
             if timepoint.t <= time:
-                fluent = timepoint.obs.get_state_by_name(state.name)
-        return fluent
+                fluents = Obs(
+                    states=[
+                        timepoint.obs.get_state_by_name(state.name)
+                        for state in possibilities[0].states
+                    ])
+
+        return False if fluents is None else any(fluents.is_superset(possibility) for possibility in possibilities)
 
 
 def get_statements(action, agent, statements) -> List[Statement]:
@@ -48,11 +59,11 @@ class Query:
     states: List[State] = None
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> List[ActionQuery | FluentQuery | AgentQuery]:
+    def from_ui(cls, scenario, termination, data: dict) -> List[ActionQuery | FormulaQuery | AgentQuery]:
         try:
             _types = {
                 "action": ActionQuery,
-                "fluent": FluentQuery,
+                "fluent": FormulaQuery,
                 "agent": AgentQuery,
             }
             out = [_types[item['query_type']].from_ui(scenario, termination, item['concrete_query']) for item in
@@ -97,7 +108,6 @@ class Query:
             statements: List[Statement] = get_statements(
                 action, agent, self.scenario.statements)
 
-            # cur_obs = [action.run(agent, obs, statements) for obs in cur_obs]
             new_models = []
             for model in cur_models:
                 tp = model.get_last_timepoint()
@@ -106,7 +116,7 @@ class Query:
                     for _obs in _res:
                         # create
                         new_tp = TimePoint(
-                            t=tp.t + 1,
+                            t=t + 1,
                             obs=_obs,
                             acs=(action, agent)
                         )
@@ -116,16 +126,8 @@ class Query:
                 else:
                     new_models.append(model)
 
-            # flatten = flatten_list(cur_obs)
-            # cur_obs = eliminate_duplicates(flatten)
-
             cur_models = new_models
         return cur_models
-
-    def is_valid(self) -> None:
-        # raise LogicException("...")
-        # obs must be defined for smallest timepoint in scenario
-        raise NotImplementedError()
 
 
 @dataclass(slots=True)
@@ -160,17 +162,25 @@ class ActionQuery(Query):
 
 
 @dataclass(slots=True)
-class FluentQuery(Query):
-    fluent: State = None
+class FormulaQuery(Query):
+    formula: Formula = None
     time: int = None
-
     mode: str = None  # 'necessary', 'possibly'
+    possibilities: List[Obs] = None
+
+    def __post_init__(self):
+        self.mode = self.mode.lower()
+        self.possibilities = self.formula.get_all_possibilities()
+
+        if self.mode not in ['necessary', 'possibly']:
+            raise LogicException(
+                "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> FluentQuery:
+    def from_ui(cls, scenario, termination, data: dict) -> FormulaQuery:
         try:
             out = cls(scenario=scenario, termination=termination,
-                      fluent=State(name=data['condition']),
+                      formula=State(name=data['condition']),
                       time=data['time'],
                       mode=data['kind']
                       )
@@ -178,24 +188,17 @@ class FluentQuery(Query):
             raise ParsingException('Failed to parse fluent query.')
         return out
 
-    def __post_init__(self):
-        mode = self.mode.lower()
-
-        if mode not in ['necessary', 'possibly']:
-            raise LogicException(
-                "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
-
     def run(self) -> str:
-        models = super(FluentQuery, self).run()
+        models = super(FormulaQuery, self).run()
         if len(models) != 0:
-            fluents = [model.extract_fluent(self.fluent, self.time) for model in models]
+            condition_models = [model.condition_holds(self.possibilities, self.time) for model in models]
             if self.mode == 'necessary':
-                if all(fluents):
-                    return f"Fluent {self.fluent.name} always holds at t={self.time}"
-                return f"Fluent {self.fluent.name} doesn't always hold at t={self.time}"
-            if any(fluents):
-                return f"Fluent {self.fluent.name} sometimes holds at t={self.time}"
-            return f"Fluent {self.fluent.name} never holds at t={self.time}"
+                if all(condition_models):  # TODO: add formula
+                    return f"Formula always holds at t={self.time}"
+                return f"Formula doesn't always hold at t={self.time}"
+            if any(condition_models):
+                return f"Formula sometimes holds at t={self.time}"
+            return f"Formula never holds at t={self.time}"
 
 
 def flatten_list(_list: List[List[Obs]]) -> List[Obs]:

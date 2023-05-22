@@ -8,4 +8,4 @@ from .statement import Statement, ReleaseStatement, EffectStatement
 from .timepoint import TimePoint, Obs
 from .scenario import Scenario
 from .action import Action
-from .query import ActionQuery, FluentQuery, AgentQuery, Query
+from .query import ActionQuery, FormulaQuery, AgentQuery, Query

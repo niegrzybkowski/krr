@@ -4,7 +4,7 @@ from backend.base import scenario
 from backend.base.action import Action
 from backend.base.agent import Agent
 from backend.base.formula import Formula
-from backend.base.query import Query, ActionQuery, AgentQuery, FluentQuery
+from backend.base.query import Query, ActionQuery, AgentQuery, FormulaQuery
 from backend.base.state import State
 
 from backend.base.statement import EffectStatement, ReleaseStatement, Statement
@@ -95,7 +95,7 @@ class QueryTestCase(unittest.TestCase):
         # then
         self.assertEqual(result, f"Action write letter is not performed in moment 3 in this Scenario")
 
-    def test_when_agent_query_given_run_then_action_performed(self):
+    def test_when_agent_query_given_run_then_action_not_performed(self):
         # given
         query = AgentQuery(
             scenario=self.scenario,
@@ -103,7 +103,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Agent Postman is active in this Scenario")
+        self.assertEqual(result, f"Agent Postman is not active in this Scenario")
 
     def test_when_agent_query_given_run_then_agent_not_active(self):
         # given
@@ -115,38 +115,63 @@ class QueryTestCase(unittest.TestCase):
         # then
         self.assertEqual(result, f"Agent Kaka is not active in this Scenario")
 
-    def test_when_fluent_query_given_run_then_necessary_at_t(self):
+    def test_when_formula_query_given_run_then_necessary_at_t(self):
         # given
-        query = FluentQuery(
+        query = FormulaQuery(
             scenario=self.scenario,
-            termination=5, states=self.states, fluent=State('letter sent'),
+            termination=5, states=self.states,
+            formula=Formula(['letter sent']),
             mode='necessary', time=3
         )
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Fluent letter sent always holds at t=3")
+        self.assertEqual(result, f"Formula always holds at t=3")
 
-    def test_when_fluent_query_given_run_then_possible_at_t(self):
+    def test_when_formula_query_given_run_then_possible_at_t(self):
         # given
-        query = FluentQuery(
+        query = FormulaQuery(
             scenario=self.scenario,
-            termination=5, states=self.states, fluent=State('letter delivered'),
+            termination=5, states=self.states, formula=Formula(['letter delivered']),
             mode='possibly', time=5
         )
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Fluent letter delivered sometimes holds at t=5")
+        self.assertEqual(result, f"Formula sometimes holds at t=5")
 
-    def test_when_fluent_query_given_run_then_not_hold_at_t(self):
+    def test_when_formula_query_given_run_then_not_hold_at_t(self):
         # given
-        query = FluentQuery(
+        query = FormulaQuery(
             scenario=self.scenario,
-            termination=5, states=self.states, fluent=State('letter delivered'),
+            termination=5, states=self.states, formula=Formula(['letter delivered']),
             mode='possibly', time=2
         )
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Fluent letter delivered never holds at t=2")
+        self.assertEqual(result, f"Formula never holds at t=2")
+
+    def test_when_multiple_fluent_in_formula_query_given_run_then_hold_at_t(self):
+        # given
+        query = FormulaQuery(
+            scenario=self.scenario,
+            termination=5, states=self.states, formula=Formula(['letter sent', 'and', 'letter ready']),
+            mode='necessary', time=3
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Formula always holds at t=3")
+
+    def test_when_multiple_fluent_in_formula_query_given_run_then_not_hold_at_t(self):
+        # given
+        query = FormulaQuery(
+            scenario=self.scenario,
+            termination=5, states=self.states, formula=Formula(['letter sent', 'and', 'letter ready']),
+            mode='necessary', time=2
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Formula doesn't always hold at t=2")
