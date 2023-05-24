@@ -1,5 +1,7 @@
 from typing import List
 import unittest
+
+from backend.base.exception import LogicException
 from backend.base import scenario
 from backend.base.action import Action
 from backend.base.agent import Agent
@@ -63,6 +65,100 @@ class QueryTestCase(unittest.TestCase):
                     t=3, acs=(Action('deliver letter'), Agent('Postman'))),
                 TimePoint(
                     t=4, acs=(Action('read letter'), Agent('Receiver'))),
+            ])
+
+        self.multiple_scenario = scenario.Scenario.from_timepoints(
+            statements=self.statements,
+            timepoints=[
+                TimePoint(
+                    t=0,
+                    obs=Obs(formula=Formula(structure=[
+                        [
+                            "not",
+                            "letter sent"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter ready"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter read"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter delivered"
+                        ]
+                    ]))),
+                TimePoint(
+                    t=1, acs=(Action('write letter'), Agent('Sender'))),
+                TimePoint(
+                    t=2, acs=(Action('send letter'), Agent('Sender'))),
+                TimePoint(
+                    t=3, acs=(Action('deliver letter'), Agent('Postman'))),
+                TimePoint(
+                    t=4, acs=(Action('read letter'), Agent('Receiver')), obs=Obs(formula=Formula(structure=[
+                        "letter delivered"
+                    ]))),
+            ])
+
+        self.not_realizable_multiple_scenario = scenario.Scenario.from_timepoints(
+            statements=self.statements,
+            timepoints=[
+                TimePoint(
+                    t=0,
+                    obs=Obs(formula=Formula(structure=[
+                        [
+                            "not",
+                            "letter sent"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter ready"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter read"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter delivered"
+                        ]
+                    ]))),
+                TimePoint(
+                    t=1, acs=(Action('write letter'), Agent('Sender'))),
+                TimePoint(
+                    t=2, acs=(Action('send letter'), Agent('Sender'))),
+                TimePoint(
+                    t=3, acs=(Action('deliver letter'), Agent('Postman'))),
+                TimePoint(
+                    t=4, acs=(Action('read letter'), Agent('Receiver')), obs=Obs(formula=Formula(structure=[
+                        [
+                            "not",
+                            "letter sent"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter ready"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter read"
+                        ],
+                        "and",
+                        [
+                            "not",
+                            "letter delivered"
+                        ]
+                    ]))),
             ])
 
     def test_given_obs_same_states(self):
@@ -175,3 +271,57 @@ class QueryTestCase(unittest.TestCase):
         result = query.run()
         # then
         self.assertEqual(result, f"Formula doesn't always hold at t=2")
+
+    def test_when_multiple_obs_query_given_run_then_one_result(self):
+        # given
+        query = Query(
+            scenario=self.multiple_scenario,
+            termination=5, states=self.states
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(len(result), 1)
+
+    def test_when_multiple_obs_and_formula_query_given_run_then_necessary_at_t(self):
+        # given
+        query = FormulaQuery(
+            scenario=self.multiple_scenario,
+            termination=5, states=self.states, formula=Formula(['letter delivered']),
+            mode='necessary', time=4
+        )
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Formula always holds at t=4")
+
+    def test_when_multiple_obs_and_action_query_given_run_then_necessary_at_t(self):
+        # given
+        query = ActionQuery(
+            scenario=self.multiple_scenario,
+            termination=5, states=self.states, action=Action('read letter'), time=4)
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Action read letter is performed in moment 4 in this Scenario")
+
+    def test_when_multiple_obs_and_agent_query_given_run_then_active(self):
+        # given
+        query = AgentQuery(
+            scenario=self.multiple_scenario,
+            termination=5, states=self.states, agent=Agent("Postman"))
+        # when
+        result = query.run()
+        # then
+        self.assertEqual(result, f"Agent Postman is active in this Scenario")
+
+    def test_when_multiple_obs_and_query_given_run_then_not_realizable(self):
+        # given
+        query = Query(
+            scenario=self.not_realizable_multiple_scenario,
+            termination=5, states=self.states
+        )
+        # when
+        with self.assertRaises(LogicException):
+            # then
+            query.run()
