@@ -53,6 +53,7 @@ class ActionTest(unittest.TestCase):
         action = Action('deliver letter')
         # when
         with self.assertRaises(LogicException):
+            # then
             action.run(self.obs, self.statements)
 
     def test_given_two_release_statements_in_the_same_action_when_run_then_multiple_results(self):
