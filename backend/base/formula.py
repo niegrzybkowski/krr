@@ -68,9 +68,12 @@ class Formula:
     structure: List[Union[str, str]] = field(default_factory=list)
 
     @classmethod
-    def from_ui(cls, data: dict) -> Formula:
+    def from_ui(cls, data: str) -> Formula:
         try:
-            out = data['condition']
+            if not data:
+                out = None
+            else:
+                out = data if isinstance(data, list) else [data]
         except KeyError:
             raise exc.ParsingException('Failed to parse precondition.')
         return cls(structure=out)
