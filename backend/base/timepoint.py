@@ -18,18 +18,12 @@ class Obs(list):
     @classmethod
     def from_ui(cls, data: dict) -> Obs:
         try:
-            _out = data['parsed_expression'][0]
-            states = []
-            for item in _out:
-                if item == "and":
-                    continue
-                if isinstance(item, list):
-                    states.append(state.State(name=item[1], holds=False))
-                    continue
-                states.append(state.State(name=item))
+            out = cls(
+                formula=formula.Formula.from_ui(data['parsed_expression'])
+            )
         except Exception:
             raise ParsingException('Failed to parse obs.')
-        return cls(states=states)
+        return out
 
     def is_superset(self, other: Obs) -> bool:
         for _state in self.states:

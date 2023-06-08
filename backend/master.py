@@ -13,7 +13,7 @@ def parse_data(data: dict):
     scenario = Scenario.from_ui(data)
     statements = Statement.from_ui(data)
 
-    queries = Query.from_ui(scenario=scenario, termination=termination, data=data)
+    queries = Query.from_ui(scenario=scenario, termination=termination, states=states, data=data)
 
     return {
         "termination": termination,

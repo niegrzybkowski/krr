@@ -59,14 +59,14 @@ class Query:
     states: List[State] = None
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> List[ActionQuery | FormulaQuery | AgentQuery]:
+    def from_ui(cls, scenario, termination, states, data: dict) -> List[ActionQuery | FormulaQuery | AgentQuery]:
         try:
             _types = {
                 "action": ActionQuery,
                 "fluent": FormulaQuery,
                 "agent": AgentQuery,
             }
-            out = [_types[item['query_type']].from_ui(scenario, termination, item['concrete_query']) for item in
+            out = [_types[item['query_type']].from_ui(scenario, termination, states, item['concrete_query']) for item in
                    data['QUERY']]
         except KeyError:
             raise ParsingException('Failed to parse query.')
@@ -136,10 +136,12 @@ class ActionQuery(Query):
     time: int = None
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> ActionQuery:
+    def from_ui(cls, scenario, termination, states, data: dict) -> ActionQuery:
         try:
             out = cls(
-                scenario=scenario, termination=termination,
+                scenario=scenario,
+                termination=termination,
+                states=states,
                 action=Action(name=data['action']),
                 time=data['time']
             )
@@ -177,13 +179,16 @@ class FormulaQuery(Query):
                 "Fluent Query can be executed only in 'necessary' or 'possibly' mode.")
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> FormulaQuery:
+    def from_ui(cls, scenario, termination, states, data: dict) -> FormulaQuery:
         try:
-            out = cls(scenario=scenario, termination=termination,
-                      formula=State(name=data['condition']),
-                      time=data['time'],
-                      mode=data['kind']
-                      )
+            out = cls(
+                scenario=scenario, 
+                termination=termination,
+                states=states,
+                formula=Formula.from_ui(data['condition']),
+                time=data['time'],
+                mode=data['kind']
+            )
         except (KeyError, TypeError):
             raise ParsingException('Failed to parse fluent query.')
         return out
@@ -221,10 +226,14 @@ class AgentQuery(Query):
     agent: Agent = None
 
     @classmethod
-    def from_ui(cls, scenario, termination, data: dict) -> AgentQuery:
+    def from_ui(cls, scenario, termination, states, data: dict) -> AgentQuery:
         try:
-            out = cls(scenario=scenario, termination=termination,
-                      agent=Agent(name=data['agent']))
+            out = cls(
+                scenario=scenario,
+                termination=termination,
+                states=states,
+                agent=Agent(name=data['agent'])
+            )
         except (KeyError, TypeError):
             raise ParsingException('Failed to parse agent query.')
         return out
