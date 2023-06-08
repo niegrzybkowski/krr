@@ -85,10 +85,7 @@
             "professor at university"
           ],
           "and",
-          [
-            "not",
-            "student at university"
-          ]
+          "student at university"
         ]
       ],
       "time": 0
@@ -111,9 +108,7 @@
       "action": "study",
       "agent": "student",
       "statement_type": "releases",
-      "effects": [
-        "student tired"
-      ],
+      "effects": "student tired",
       "condition": [
         "student at university",
         "and",
@@ -132,8 +127,11 @@
       "statement_type": "causes",
       "effects": [
         "student at university",
-        "not",
-        "student in house"
+        "and",
+        [
+          "not",
+          "student in house"
+        ]
       ],
       "condition": null
     },
@@ -144,8 +142,11 @@
       "statement_type": "causes",
       "effects": [
         "student in house",
-        "not",
-        "student at university"
+        "and",
+        [
+          "not",
+          "student at university"
+        ]
       ],
       "condition": null
     },
@@ -154,9 +155,7 @@
       "action": "go to university",
       "agent": "professor",
       "statement_type": "causes",
-      "effects": [
-        "professor at university"
-      ],
+      "effects": "professor at university",
       "condition": null
     },
     {

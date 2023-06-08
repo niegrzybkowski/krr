@@ -362,6 +362,9 @@ class OBSManager(SimpleCollectionManager):
 
     def set_data(self, data):
         self.contents = [OBS(state_manager=self.state_manager, time_manager=self.time_manager, **data_item) for data_item in data]
+        for statement in self.contents:
+            if not statement.parse():
+                raise ValueError()
 
 class StatementManager(SimpleCollectionManager):
     def __init__(self, action_manager, agent_manager, state_manager):
@@ -405,6 +408,9 @@ class StatementManager(SimpleCollectionManager):
             ) 
             for data_item in data
         ]
+        for statement in self.contents:
+            if not statement.parse():
+                raise ValueError()
 
     def handle_event(self, window, event, values):
         if event == f"-{self.content_name}-TEMPLATE-CAUSES-":
@@ -491,6 +497,9 @@ class QueryManager(SimpleCollectionManager):
             ) 
             for data_item in data
         ]
+        for statement in self.contents:
+            if not statement.parse():
+                raise ValueError()
     
 class ScenarioManager:
     def __init__(self, manager_manager):
