@@ -64,7 +64,7 @@ class ReleaseStatement(Statement):
                 action=action.Action(name=data['action']),
                 agent=agent.Agent(name=data['agent']),
                 precondition=formula.Formula.from_ui(data['condition']),
-                postcondition=data['effects'][0]
+                postcondition=state.State(data['effects'])
             )
         except (KeyError, ParsingException):
             raise ParsingException('Failed to parse release statement.')
