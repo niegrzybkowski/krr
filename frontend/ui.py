@@ -31,35 +31,45 @@ def main():
     scenario_manager = ScenarioManager(manager_manager)
 
     serdelizer_layout = [
-        [sg.Text("Press serialize to dump application state")],
+        [sg.Text("Press serialize to dump application state. You can then copy the contents of the below text field into a file to save the scenario.\n" + 
+                 "Press deserialize to load application state. Similarly, you can copy contents into the text field below.")],
         [sg.Button("Serialize"), sg.Button("Deserialize")],
         [sg.Multiline("", key="-SERDE-IO-", size=(100, 30))],
+        [sg.Button("-SUBMIT-", bind_return_key=True, visible=False)]
     ]
 
     layout = [[ sg.TabGroup([[
-        sg.Tab("Agents", agent_manager.display),
-        sg.Tab("Actions", action_manager.display),
-        sg.Tab("Fluents", state_manager.display),
+        sg.Tab("Agents", agent_manager.display, key=agent_manager.content_name),
+        sg.Tab("Actions", action_manager.display, key=action_manager.content_name),
+        sg.Tab("Fluents", state_manager.display, key=state_manager.content_name),
         sg.Tab("Time", time_manager.display),
-        sg.Tab("ACS", acs_manager.display),
-        sg.Tab("OBS", obs_manager.display),
-        sg.Tab("Statements", statement_manager.display),
-        sg.Tab("Query", query_manager.display),
+        sg.Tab("ACS", acs_manager.display, key=acs_manager.content_name),
+        sg.Tab("OBS", obs_manager.display, key=obs_manager.content_name),
+        sg.Tab("Statements", statement_manager.display, key=statement_manager.content_name),
+        sg.Tab("Query", query_manager.display, key=query_manager.content_name),
         sg.Tab("Scenario", scenario_manager.display),
         sg.Tab("Save", serdelizer_layout),
     ]]
-    #, size=(600, 480)
+    , key="-TAB-"
+    , expand_x=True
+    , expand_y=True
     ) ]]
 
-    window = sg.Window('KRR', layout, location=DEFAULT_LOCATION)
+    window = sg.Window('KRR', layout, location=DEFAULT_LOCATION, resizable =True, finalize=True)
+    window.set_min_size((500, 350))
 
     try:
         while True:
             event, values = window.read()
             if event == sg.WIN_CLOSED:
                 break
-            
+
             print(event, values)
+
+            if event == "-SUBMIT-":
+                window.write_event_value(f"-{values['-TAB-']}-ADD-", values)
+                continue
+            
             manager_manager.handle_event(window, event, values)
             scenario_manager.handle_event(window, event)
 
@@ -82,6 +92,8 @@ def main():
                     sg.popup_error("Unable to load application data.", location=DEFAULT_LOCATION)
                     print(traceback.format_exc())
                     manager_manager.set_data(backup)
+            
+            manager_manager.update_all(window)
 
     finally:
         window.close()

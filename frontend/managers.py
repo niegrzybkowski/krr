@@ -14,7 +14,7 @@ class CollectionManager:
     def __init__(self, contents_display_id):
         self.contents_display_id = contents_display_id
         self.contents = []
-        self.contents_display = sg.Text("", key=contents_display_id)
+        self.contents_display = sg.Multiline("", key=contents_display_id, expand_x=True, size=(10, 10), disabled=True)
     
     def update(self, window):
         window[self.contents_display_id].update(
@@ -58,7 +58,7 @@ class CollectionManager:
         self.update(window)
 
 class SimpleCollectionManager(CollectionManager):
-    def __init__(self, content_name):
+    def __init__(self, content_name ):
         super().__init__(f"-{content_name}-")
         self.content_name = content_name
         self.content_name_lower = content_name.lower()
@@ -123,17 +123,23 @@ class SimpleCollectionManager(CollectionManager):
     def set_data(self, data):
         self.contents = data
 
+    def update(self, window):
+        return super().update(window)
+
 class AgentManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("AGENT")
+        self.display = self.display + [[sg.Text(f"To add an agent, type the name into the text field and press the 'Add' button.\nTo remove an agent, press the 'Remove' button to open the removal dialog.")]]
 
 class ActionManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("ACTION")
+        self.display = self.display + [[sg.Text(f"To add an action, type the name into the text field and press the 'Add' button.\nTo remove an action, press the 'Remove' button to open the removal dialog.")]]
 
 class StateManager(SimpleCollectionManager):
     def __init__(self):
         super().__init__("STATE")
+        self.display = self.display + [[sg.Text(f"To add a fluent, type the name into the text field and press the 'Add' button.\nTo remove a fluent, press the 'Remove' button to open the removal dialog.")]]
 
 class TimeManager:
     def __init__(self):
@@ -228,7 +234,13 @@ class ACSManager(SimpleCollectionManager):
         self.content_name_lower = "ACS"
         self.content_name_title = "ACS"
         self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
-        self.display = self.display + [[sg.Text(f"ACS are comma separated 3-tuples. Outer brackets and quotation marks are optional.")]]
+        self.display = self.display + [
+            [sg.Button("Insert Template", key=f"-{self.content_name}-TEMPLATE-")],
+
+            [sg.Text(f"ACS are comma separated triples of Action, Agent, Time. Type these 3 elements into the text field, separated by commas, then press the 'Add' button.\n"+
+                     "To remove an element press the 'Remove' button to open the deletion dialog.\n"+
+                     "Press the 'Insert Template' button to insert a template.")
+        ]]
     
     def remove_fluff(self, element):
         element = element.replace("(" , "")
@@ -248,7 +260,9 @@ class ACSManager(SimpleCollectionManager):
         except ValueError:
             sg.popup_error("Please provide a tuple of 3 values separated by commas", location=DEFAULT_LOCATION)
             return False
-        
+        return self.validate_split(action, agent, time)
+
+    def validate_split(self, action, agent, time):
         if action not in self.actions_manager.contents:
             sg.popup_error(f"Action '{action}' does not exist.", location=DEFAULT_LOCATION)
             return False
@@ -276,6 +290,8 @@ class ACSManager(SimpleCollectionManager):
         return self.validate_add(element) # jank
     
     def handle_event(self, window, event, values):
+        if event == f"-{self.content_name}-TEMPLATE-":
+            window[self.text_field_key].update("(ACTION, AGENT, TIME)")
         if "TIME" in event:
             self.update(window)
         return super().handle_event(window, event, values)
@@ -291,8 +307,14 @@ class OBSManager(SimpleCollectionManager):
         self.content_name_lower = "OBS"
         self.content_name_title = "OBS"
         self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
-        self.display = self.display + [[sg.Text(f"OBS are comma separated 2-tuples. Outer brackets and quotation marks are optional.\n" +
-                                                 "Parsing of logic expressions require fluents to be defined beforehand.")]]
+        self.display = self.display + [
+            [sg.Button("Insert Template", key=f"-{self.content_name}-TEMPLATE-")],
+            [sg.Text(f"OBS are comma separated pairs of a logic expression and time.\n" +
+                     "Logic expressions are a text representation using English equivalents of symbols ('not' (unary negation), 'and', 'or', 'implies', 'if and only if').\n" +
+                     "Leaves of the expression are fluents. Brackets denote precedence: '(State1 or not State2) and State3'.\n" +
+                     "Enter the logic expression and time, separated by a comma, into the text field, which will then be parsed. Confirm with 'Add' button.\n" +
+                     "Press the 'Insert Template' button to insert a template.")]
+        ]
     
     def remove_fluff(self, element):
         if element[-1] == ")":
@@ -332,6 +354,8 @@ class OBSManager(SimpleCollectionManager):
         return self.validate_add(element) # jank
     
     def handle_event(self, window, event, values):
+        if event == f"-{self.content_name}-TEMPLATE-":
+            window[self.text_field_key].update("(LOGIC EXPRESSION, TIME)")
         if "TIME" in event:
             self.update(window)
         return super().handle_event(window, event, values)
@@ -345,7 +369,18 @@ class StatementManager(SimpleCollectionManager):
         self.action_manager = action_manager
         self.agent_manager = agent_manager
         self.state_manager = state_manager
-        self.display = self.display + [[sg.Text(f"Parsing of statements expressions requires at least one action and fluent to be defined beforehand.")]]
+        self.display = self.display + [
+            [
+                sg.Button("Insert 'Causes' Template", key=f"-{self.content_name}-TEMPLATE-CAUSES-"), 
+                sg.Button("Insert 'Releases' Template", key=f"-{self.content_name}-TEMPLATE-RELEASES-"), 
+            ],
+            [sg.Text(f"Statement syntax is split between two types: causes statements and releases statements\n"+
+                     "Causes statements have the following syntax: ACTION [by AGENT] causes LOGIC EXPRESSION [if LOGIC EXPRESSION]\n" +
+                     "Releases statements have the following syntax: ACTION [by AGENT] releases FLUENT [if LOGIC EXPRESSION]\n" +
+                     "Capital letters denote appropriate objects within the scenario, parts of the syntax in brackets [] are optional\n"+
+                     "Enter the statement into the text field, which will then be parsed. Confirm with 'Add' button.\n" +
+                     "Press one of the 'Insert Template' buttons to insert a template.")]
+        ]
 
     def validate_add(self, element):
         if element is None:
@@ -371,6 +406,13 @@ class StatementManager(SimpleCollectionManager):
             for data_item in data
         ]
 
+    def handle_event(self, window, event, values):
+        if event == f"-{self.content_name}-TEMPLATE-CAUSES-":
+            window[self.text_field_key].update("ACTION by AGENT causes LOGIC EXPRESSION if LOGIC EXPRESSION")
+        if event == f"-{self.content_name}-TEMPLATE-RELEASES-":
+            window[self.text_field_key].update("ACTION by AGENT releases FLUENT if LOGIC EXPRESSION")
+        return super().handle_event(window, event, values)
+
 class QueryManager(SimpleCollectionManager):
     def __init__(self, action_manager, agent_manager, state_manager, time_manager):
         super().__init__("QUERY")
@@ -390,7 +432,21 @@ class QueryManager(SimpleCollectionManager):
             [sg.Button("Add state query", key=self.add_fluent_query_event_key),
             sg.Button("Add action query", key=self.add_action_query_event_key),
             sg.Button("Add agent query", key=self.add_agent_query_event_key),
-            sg.Button("Remove", key=self.remove_event_key)]
+            sg.Button("Remove", key=self.remove_event_key)],
+            [
+                sg.Button("Insert 'Neccessary State' Template", key=f"-{self.content_name}-TEMPLATE-NECESSARY-"), 
+                sg.Button("Insert 'Possibly State' Template", key=f"-{self.content_name}-TEMPLATE-POSSIBLY-"), 
+                sg.Button("Insert 'Action' Template", key=f"-{self.content_name}-TEMPLATE-ACTION-"), 
+                sg.Button("Insert 'Agent' Template", key=f"-{self.content_name}-TEMPLATE-AGENT-"), 
+            ],
+            [sg.Text(f"Query syntax is split between 4 types: necessary state, possible state, action, and agent queries.\n"+
+                     "Necessary state queries have the following syntax: Necessary LOGIC EXPRESSION at TIME [when Sc]\n" +
+                     "Possible state queries have the following syntax: Possibly LOGIC EXPRESSION at TIME [when Sc]\n" +
+                     "Action queries have the following syntax: Necessary ACTION by AGENT at TIME [when Sc]\n" +
+                     "Agent queries have the following syntax: Agent AGENT is active [when Sc]\n" +
+                     "Capital letters denote appropriate objects within the scenario, parts of the syntax in brackets [] are optional\n"+
+                     "Enter the query into the text field, which will then be parsed. Confirm with the appropriate 'Add' button.\n" +
+                     "Press one of the 'Insert Template' buttons to insert a template.")]
         ]
 
     def validate_add(self, element, query_type):
@@ -405,6 +461,14 @@ class QueryManager(SimpleCollectionManager):
 
     def handle_event(self, window, event, values):
         super().handle_event(window, event, values)
+        if event == f"-{self.content_name}-TEMPLATE-NECESSARY-":
+            window[self.text_field_key].update("Necessary LOGIC EXPRESSION at TIME when Sc")
+        if event == f"-{self.content_name}-TEMPLATE-POSSIBLY-":
+            window[self.text_field_key].update("Possibly LOGIC EXPRESSION at TIME when Sc")
+        if event == f"-{self.content_name}-TEMPLATE-ACTION-":
+            window[self.text_field_key].update("Necessary ACTION by AGENT at TIME when Sc")
+        if event == f"-{self.content_name}-TEMPLATE-AGENT-":
+            window[self.text_field_key].update("Agent AGENT is active when Sc")
 
         if event == self.add_fluent_query_event_key:
             self.request_new_element(window, query_type="fluent")
