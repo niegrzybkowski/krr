@@ -111,17 +111,18 @@ class Statement:
             agent_parser = create_literal_parser(self.agent_manager.contents).set_name("agent")
             agent_parser = pp.Opt(pp.Suppress("by") + agent_parser, default=None)
 
-        statement_type_parser = (pp.Literal("releases") | pp.Literal("causes")).set_name("statement type (one of 'releases' or 'causes')")
-
-        state_parser = create_literal_parser(self.state_manager.contents).set_name("state")
-        
-        effect_parser = pp.delimitedList(pp.Opt("not") + state_parser, delim="and")
-        effect_parser.set_parse_action(lambda toks: [toks]).set_name("effect list")
+        type_and_effect_parser = (
+            pp.Literal("releases").set_name("statement type (one of 'releases' or 'causes')") +
+            create_literal_parser(self.state_manager.contents).set_name("state")
+        ) | (
+             pp.Literal("causes").set_name("statement type (one of 'releases' or 'causes')") + 
+            create_logic_parser(self.state_manager.contents)
+        )
 
         logic_condition = create_logic_parser(self.state_manager.contents)
         logic_parser = pp.Opt(pp.Suppress("if") + logic_condition, default=None)
 
-        parser = action_parser + agent_parser + statement_type_parser + effect_parser + logic_parser
+        parser = action_parser + agent_parser + type_and_effect_parser + logic_parser
         try:
             parsed_expression = parser.parse_string(self.original_expression, parse_all=True).as_list()
         except pp.exceptions.ParseException as e:
