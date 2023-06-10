@@ -38,6 +38,7 @@ class CollectionManager:
     def request_new_element(self, window, **kwargs):
         #element = self.popup_add(**kwargs)
         element = window[self.text_field_key].get()
+        element = element.lower()
         if not self.validate_add(element, **kwargs):
             return
         element = self.preprocess_element(element, **kwargs)
