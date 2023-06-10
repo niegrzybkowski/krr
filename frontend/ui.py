@@ -67,8 +67,9 @@ def main():
             print(event, values)
 
             if event == "-SUBMIT-":
-                window.write_event_value(f"-{values['-TAB-']}-ADD-", values)
-                continue
+                if values['-TAB-'] != "QUERY":
+                    window.write_event_value(f"-{values['-TAB-']}-ADD-", values)
+                    continue
             
             manager_manager.handle_event(window, event, values)
             scenario_manager.handle_event(window, event)

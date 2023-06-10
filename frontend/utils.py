@@ -17,19 +17,19 @@ def parse_logic(expression, states):
     return parsed_expression
 
 def create_literal_parser(literals):
-    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-    literal_parser = pp.Literal(literals[0]) | quoted_literal
+    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Keyword(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
+    literal_parser = pp.Keyword(literals[0]) | quoted_literal
     for state in literals[1:]:
-        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-        literal_parser |= pp.Literal(state) | quoted_literal
+        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Keyword(literals[0]) + (pp.Suppress("'") | pp.Suppress("\""))
+        literal_parser |= pp.Keyword(state) | quoted_literal
     return literal_parser
 
 def create_logic_parser(states):
-    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-    states_parser = pp.Literal(states[0]) | quoted_literal
+    quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Keyword(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
+    states_parser = pp.Keyword(states[0]) | quoted_literal
     for state in states[1:]:
-        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Literal(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
-        states_parser |= pp.Literal(state) | quoted_literal
+        quoted_literal = (pp.Suppress("'") | pp.Suppress("\"")) + pp.Keyword(states[0]) + (pp.Suppress("'") | pp.Suppress("\""))
+        states_parser |= pp.Keyword(state) | quoted_literal
     
     states_parser = states_parser.set_name("state")
 
