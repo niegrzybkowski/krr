@@ -80,7 +80,7 @@ class TimePoint:
             obs = [(item['time'], Obs.from_ui(item)) for item in data['OBS']]
             for _obs in obs:
                 if _obs[0] in acs_t:
-                    tp = next(filter(lambda x: x.t == _obs[0]))
+                    tp = next(filter(lambda x: x.t == _obs[0], out))
                     tp.obs = _obs[1]
                 else:
                     out.append(TimePoint(t=_obs[0], obs=_obs[1]))

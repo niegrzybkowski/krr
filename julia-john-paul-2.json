@@ -1,0 +1,280 @@
+{
+  "AGENT": [
+    "john",
+    "julia",
+    "paul"
+  ],
+  "ACTION": [
+    "train",
+    "shoot julia",
+    "shoot john",
+    "meet julia",
+    "meet john"
+  ],
+  "STATE": [
+    "julia alive",
+    "john alive",
+    "paul trained"
+  ],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [
+    {
+      "action": "train",
+      "agent": "paul",
+      "time": 1
+    },
+    {
+      "action": "shoot john",
+      "agent": "paul",
+      "time": 2
+    },
+    {
+      "action": "meet john",
+      "agent": "julia",
+      "time": 3
+    },
+    {
+      "action": "meet julia",
+      "agent": "john",
+      "time": 4
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "john alive and julia alive and not paul trained",
+      "parsed_expression": [
+        [
+          "john alive",
+          "and",
+          "julia alive",
+          "and",
+          [
+            "not",
+            "paul trained"
+          ]
+        ]
+      ],
+      "time": 0
+    },
+    {
+      "original_expression": "john alive if and only if julia alive and not paul trained",
+      "parsed_expression": [
+        [
+          "john alive",
+          "if and only if",
+          [
+            "julia alive",
+            "and",
+            [
+              "not",
+              "paul trained"
+            ]
+          ]
+        ]
+      ],
+      "time": 6
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "shoot john by paul causes not john alive and not paul trained if paul trained",
+      "action": "shoot john",
+      "agent": "paul",
+      "statement_type": "causes",
+      "effects": [
+        [
+          "not",
+          "john alive"
+        ],
+        "and",
+        [
+          "not",
+          "paul trained"
+        ]
+      ],
+      "condition": "paul trained"
+    },
+    {
+      "original_expression": "shoot julia by paul causes not julia alive and not paul trained if paul trained",
+      "action": "shoot julia",
+      "agent": "paul",
+      "statement_type": "causes",
+      "effects": [
+        [
+          "not",
+          "julia alive"
+        ],
+        "and",
+        [
+          "not",
+          "paul trained"
+        ]
+      ],
+      "condition": "paul trained"
+    },
+    {
+      "original_expression": "shoot julia by paul releases julia alive if not paul trained and julia alive",
+      "action": "shoot julia",
+      "agent": "paul",
+      "statement_type": "releases",
+      "effects": "julia alive",
+      "condition": [
+        [
+          "not",
+          "paul trained"
+        ],
+        "and",
+        "julia alive"
+      ]
+    },
+    {
+      "original_expression": "shoot john by paul releases john alive if not paul trained and john alive",
+      "action": "shoot john",
+      "agent": "paul",
+      "statement_type": "releases",
+      "effects": "john alive",
+      "condition": [
+        [
+          "not",
+          "paul trained"
+        ],
+        "and",
+        "john alive"
+      ]
+    },
+    {
+      "original_expression": "train by paul causes paul trained",
+      "action": "train",
+      "agent": "paul",
+      "statement_type": "causes",
+      "effects": "paul trained",
+      "condition": null
+    },
+    {
+      "original_expression": "meet john by julia releases julia alive if julia alive",
+      "action": "meet john",
+      "agent": "julia",
+      "statement_type": "releases",
+      "effects": "julia alive",
+      "condition": "julia alive"
+    },
+    {
+      "original_expression": "meet julia by john causes not john alive if john alive and (john alive if and only if not julia alive)",
+      "action": "meet julia",
+      "agent": "john",
+      "statement_type": "causes",
+      "effects": [
+        "not",
+        "john alive"
+      ],
+      "condition": [
+        "john alive",
+        "and",
+        [
+          "john alive",
+          "if and only if",
+          [
+            "not",
+            "julia alive"
+          ]
+        ]
+      ]
+    }
+  ],
+  "QUERY": [
+    {
+      "original_expression": "agent julia is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "julia"
+      }
+    },
+    {
+      "original_expression": "agent john is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "john"
+      }
+    },
+    {
+      "original_expression": "agent paul is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "paul"
+      }
+    },
+    {
+      "original_expression": "necessary paul trained at 2 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "paul trained",
+        "time": 2
+      }
+    },
+    {
+      "original_expression": "necessary not john alive at 3 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": [
+          "not",
+          "john alive"
+        ],
+        "time": 3
+      }
+    },
+    {
+      "original_expression": "possibly not julia alive at 4 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "possibly",
+        "condition": [
+          "not",
+          "julia alive"
+        ],
+        "time": 4
+      }
+    },
+    {
+      "original_expression": "necessary train by paul at 1",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "train",
+        "agent": "paul",
+        "time": 1
+      }
+    },
+    {
+      "original_expression": "necessary shoot john by paul at 2 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "shoot john",
+        "agent": "paul",
+        "time": 2
+      }
+    },
+    {
+      "original_expression": "necessary meet john by julia at 3",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "meet john",
+        "agent": "julia",
+        "time": 3
+      }
+    },
+    {
+      "original_expression": "necessary meet julia by john at 4",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "meet julia",
+        "agent": "john",
+        "time": 4
+      }
+    }
+  ]
+}
