@@ -151,14 +151,11 @@ class ActionQuery(Query):
 
     def run(self) -> str:
         models = super(ActionQuery, self).run()
-        is_performed = False
+        item = self.scenario.timepoints.get(self.time, None)
+        is_performed = item is not None and item.is_acs() and item.acs[0] == self.action
         if len(models) != 0:
-            for model in models:
-                if model.is_performing_action_in_t(self.action, self.time):
-                    is_performed = True
-
-        if is_performed:
-            return f"Action {self.action.name} is performed in moment {self.time} in this Scenario"
+            if is_performed:
+                return f"Action {self.action.name} is performed in moment {self.time} in this Scenario"
 
         return f"Action {self.action.name} is not performed in moment {self.time} in this Scenario"
 
@@ -182,7 +179,7 @@ class FormulaQuery(Query):
     def from_ui(cls, scenario, termination, states, data: dict) -> FormulaQuery:
         try:
             out = cls(
-                scenario=scenario, 
+                scenario=scenario,
                 termination=termination,
                 states=states,
                 formula=Formula.from_ui(data['condition']),
@@ -198,7 +195,7 @@ class FormulaQuery(Query):
         if len(models) != 0:
             condition_models = [model.condition_holds(self.possibilities, self.time) for model in models]
             if self.mode == 'necessary':
-                if all(condition_models):  # TODO: add formula
+                if all(condition_models):
                     return f"Formula always holds at t={self.time}"
                 return f"Formula doesn't always hold at t={self.time}"
             if any(condition_models):
