@@ -1,0 +1,109 @@
+{
+  "AGENT": [
+    "bill",
+    "bob"
+  ],
+  "ACTION": [
+    "shoot"
+  ],
+  "STATE": [
+    "chicken alive",
+    "goose alive"
+  ],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [
+    {
+      "action": "shoot",
+      "agent": "bill",
+      "time": 2
+    },
+    {
+      "action": "shoot",
+      "agent": "bob",
+      "time": 4
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "chicken alive and goose alive",
+      "parsed_expression": [
+        [
+          "chicken alive",
+          "and",
+          "goose alive"
+        ]
+      ],
+      "time": 1
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "shoot by bill releases chicken alive",
+      "action": "shoot",
+      "agent": "bill",
+      "statement_type": "releases",
+      "effects": "chicken alive",
+      "condition": null
+    },
+    {
+      "original_expression": "shoot by bob causes not goose alive if not chicken alive",
+      "action": "shoot",
+      "agent": "bob",
+      "statement_type": "causes",
+      "effects": [
+        "not",
+        "goose alive"
+      ],
+      "condition": [
+        "not",
+        "chicken alive"
+      ]
+    }
+  ],
+  "QUERY": [
+    {
+      "original_expression": "necessary chicken alive if and only if goose alive at 5 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": [
+          "chicken alive",
+          "if and only if",
+          "goose alive"
+        ],
+        "time": 5
+      }
+    },
+    {
+      "original_expression": "possibly goose alive at 5 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "possibly",
+        "condition": "goose alive",
+        "time": 5
+      }
+    },
+    {
+      "original_expression": "necessary goose alive at 5 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "goose alive",
+        "time": 5
+      }
+    },
+    {
+      "original_expression": "necessary shoot by bob at 4 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "shoot",
+        "agent": "bob",
+        "time": 4
+      }
+    }
+  ]
+}
