@@ -1,0 +1,134 @@
+{
+  "AGENT": [
+    "traveler",
+    "taxi"
+  ],
+  "ACTION": [
+    "get in taxi"
+  ],
+  "STATE": [
+    "taxi taken",
+    "traveler waiting",
+    "traveler in taxi"
+  ],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [
+    {
+      "action": "get in taxi",
+      "agent": "traveler",
+      "time": 1
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "taxi taken and traveler waiting and not traveler in taxi",
+      "parsed_expression": [
+        [
+          "taxi taken",
+          "and",
+          "traveler waiting",
+          "and",
+          [
+            "not",
+            "traveler in taxi"
+          ]
+        ]
+      ],
+      "time": 0
+    },
+    {
+      "original_expression": "traveler in taxi",
+      "parsed_expression": [
+        "traveler in taxi"
+      ],
+      "time": 2
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "get in taxi by traveler causes traveler in taxi and not traveler waiting if traveler waiting and not taxi taken and not traveler in taxi",
+      "action": "get in taxi",
+      "agent": "traveler",
+      "statement_type": "causes",
+      "effects": [
+        "traveler in taxi",
+        "and",
+        [
+          "not",
+          "traveler waiting"
+        ]
+      ],
+      "condition": [
+        "traveler waiting",
+        "and",
+        [
+          "not",
+          "taxi taken"
+        ],
+        "and",
+        [
+          "not",
+          "traveler in taxi"
+        ]
+      ]
+    }
+  ],
+  "QUERY": [
+    {
+      "original_expression": "agent traveler is active",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "traveler"
+      }
+    },
+    {
+      "original_expression": "necessary taxi taken at 1",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "taxi taken",
+        "time": 1
+      }
+    },
+    {
+      "original_expression": "necessary get in taxi by traveler at 1",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "get in taxi",
+        "agent": "traveler",
+        "time": 1
+      }
+    },
+    {
+      "original_expression": "necessary traveler in taxi at 0",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "traveler in taxi",
+        "time": 0
+      }
+    },
+    {
+      "original_expression": "necessary traveler in taxi at 2",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "traveler in taxi",
+        "time": 2
+      }
+    },
+    {
+      "original_expression": "necessary traveler waiting at 2",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "traveler waiting",
+        "time": 2
+      }
+    }
+  ]
+}
