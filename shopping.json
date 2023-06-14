@@ -50,6 +50,16 @@
         "product in basket"
       ],
       "time": 6
+    },
+    {
+      "original_expression": "not product on shelf",
+      "parsed_expression": [
+        [
+          "not",
+          "product on shelf"
+        ]
+      ],
+      "time": 1
     }
   ],
   "STATEMENT": [
