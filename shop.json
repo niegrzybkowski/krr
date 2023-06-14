@@ -1,0 +1,253 @@
+{
+  "AGENT": [
+    "buyer",
+    "seller",
+    "shoplifter"
+  ],
+  "ACTION": [
+    "put product on shelf",
+    "put product in basket",
+    "buy product",
+    "stole product"
+  ],
+  "STATE": [
+    "product on shelf",
+    "product in basket",
+    "product bought",
+    "money provided"
+  ],
+  "TIME": {
+    "unit": "min",
+    "step": 1,
+    "termination": 15
+  },
+  "ACS": [
+    {
+      "action": "put product on shelf",
+      "agent": "seller",
+      "time": 1
+    },
+    {
+      "action": "put product in basket",
+      "agent": "buyer",
+      "time": 5
+    },
+    {
+      "action": "buy product",
+      "agent": "buyer",
+      "time": 8
+    },
+    {
+      "action": "stole product",
+      "agent": "shoplifter",
+      "time": 12
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "product in basket",
+      "parsed_expression": [
+        "product in basket"
+      ],
+      "time": 6
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "put product on shelf by seller causes product on shelf",
+      "action": "put product on shelf",
+      "agent": "seller",
+      "statement_type": "causes",
+      "effects": "product on shelf",
+      "condition": null
+    },
+    {
+      "original_expression": "put product in basket by buyer causes product in basket and not product on shelf if product on shelf",
+      "action": "put product in basket",
+      "agent": "buyer",
+      "statement_type": "causes",
+      "effects": [
+        "product in basket",
+        "and",
+        [
+          "not",
+          "product on shelf"
+        ]
+      ],
+      "condition": "product on shelf"
+    },
+    {
+      "original_expression": "buy product by buyer causes product bought if product in basket and money provided",
+      "action": "buy product",
+      "agent": "buyer",
+      "statement_type": "causes",
+      "effects": "product bought",
+      "condition": [
+        "product in basket",
+        "and",
+        "money provided"
+      ]
+    },
+    {
+      "original_expression": "buy product by buyer causes product on shelf and not product in basket if product in basket and not money provided",
+      "action": "buy product",
+      "agent": "buyer",
+      "statement_type": "causes",
+      "effects": [
+        "product on shelf",
+        "and",
+        [
+          "not",
+          "product in basket"
+        ]
+      ],
+      "condition": [
+        "product in basket",
+        "and",
+        [
+          "not",
+          "money provided"
+        ]
+      ]
+    },
+    {
+      "original_expression": "stole product by shoplifter releases product on shelf if product on shelf",
+      "action": "stole product",
+      "agent": "shoplifter",
+      "statement_type": "releases",
+      "effects": "product on shelf",
+      "condition": "product on shelf"
+    }
+  ],
+  "QUERY": [
+    {
+      "original_expression": "agent seller is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "seller"
+      }
+    },
+    {
+      "original_expression": "agent buyer is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "buyer"
+      }
+    },
+    {
+      "original_expression": "agent shoplifter is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "shoplifter"
+      }
+    },
+    {
+      "original_expression": "necessary put product on shelf by seller at 1 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "put product on shelf",
+        "agent": "seller",
+        "time": 1
+      }
+    },
+    {
+      "original_expression": "necessary put product in basket by buyer at 4 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "put product in basket",
+        "agent": "buyer",
+        "time": 4
+      }
+    },
+    {
+      "original_expression": "necessary put product in basket by buyer at 5 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "put product in basket",
+        "agent": "buyer",
+        "time": 5
+      }
+    },
+    {
+      "original_expression": "necessary buy product by buyer at 8 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "buy product",
+        "agent": "buyer",
+        "time": 8
+      }
+    },
+    {
+      "original_expression": "necessary buy product by buyer at 10 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "buy product",
+        "agent": "buyer",
+        "time": 10
+      }
+    },
+    {
+      "original_expression": "necessary stole product by shoplifter at 12 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "stole product",
+        "agent": "shoplifter",
+        "time": 12
+      }
+    },
+    {
+      "original_expression": "necessary stole product by shoplifter at 14 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "stole product",
+        "agent": "shoplifter",
+        "time": 14
+      }
+    },
+    {
+      "original_expression": "necessary product on shelf at 3 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "product on shelf",
+        "time": 3
+      }
+    },
+    {
+      "original_expression": "necessary product in basket at 7 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "product in basket",
+        "time": 7
+      }
+    },
+    {
+      "original_expression": "possibly product bought at 12 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "possibly",
+        "condition": "product bought",
+        "time": 12
+      }
+    },
+    {
+      "original_expression": "possibly money provided at 12 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "possibly",
+        "condition": "money provided",
+        "time": 12
+      }
+    },
+    {
+      "original_expression": "possibly product bought at 9 when sc",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "possibly",
+        "condition": "product bought",
+        "time": 9
+      }
+    }
+  ]
+}
