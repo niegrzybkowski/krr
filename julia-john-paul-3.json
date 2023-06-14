@@ -273,24 +273,6 @@
       }
     },
     {
-      "original_expression": "necessary julia alive at 5 when sc",
-      "query_type": "fluent",
-      "concrete_query": {
-        "kind": "necessary",
-        "condition": "julia alive",
-        "time": 5
-      }
-    },
-    {
-      "original_expression": "necessary john alive at 5 when sc",
-      "query_type": "fluent",
-      "concrete_query": {
-        "kind": "necessary",
-        "condition": "john alive",
-        "time": 5
-      }
-    },
-    {
       "original_expression": "necessary julia alive at 9 when sc",
       "query_type": "fluent",
       "concrete_query": {
