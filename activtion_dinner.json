@@ -1,0 +1,93 @@
+{
+  "AGENT": [
+    "john",
+    "ann"
+  ],
+  "ACTION": [
+    "cook"
+  ],
+  "STATE": [
+    "dinner ready"
+  ],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [
+    {
+      "action": "cook",
+      "agent": "john",
+      "time": 3
+    },
+    {
+      "action": "cook",
+      "agent": "ann",
+      "time": 6
+    },
+    {
+      "action": "cook",
+      "agent": "john",
+      "time": 7
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "not dinner ready",
+      "parsed_expression": [
+        [
+          "not",
+          "dinner ready"
+        ]
+      ],
+      "time": 1
+    },
+    {
+      "original_expression": "dinner ready",
+      "parsed_expression": [
+        "dinner ready"
+      ],
+      "time": 7
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "cook by ann causes dinner ready if not dinner ready",
+      "action": "cook",
+      "agent": "ann",
+      "statement_type": "causes",
+      "effects": "dinner ready",
+      "condition": [
+        "not",
+        "dinner ready"
+      ]
+    },
+    {
+      "original_expression": "cook by john releases dinner ready if not dinner ready",
+      "action": "cook",
+      "agent": "john",
+      "statement_type": "releases",
+      "effects": "dinner ready",
+      "condition": [
+        "not",
+        "dinner ready"
+      ]
+    }
+  ],
+  "QUERY": [
+    {
+      "original_expression": "agent john is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "john"
+      }
+    },
+    {
+      "original_expression": "agent ann is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "ann"
+      }
+    }
+  ]
+}

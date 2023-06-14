@@ -1,0 +1,98 @@
+{
+  "AGENT": [
+    "shopper"
+  ],
+  "ACTION": [
+    "buy carrots",
+    "buy apples",
+    "take carrots",
+    "take apples"
+  ],
+  "STATE": [
+    "carrots packed",
+    "apples packed",
+    "carrots taken",
+    "apples taken"
+  ],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [
+    {
+      "action": "buy carrots",
+      "agent": "shopper",
+      "time": 2
+    },
+    {
+      "action": "buy apples",
+      "agent": "shopper",
+      "time": 4
+    },
+    {
+      "action": "take carrots",
+      "agent": "shopper",
+      "time": 7
+    },
+    {
+      "action": "take apples",
+      "agent": "shopper",
+      "time": 7
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "not carrots packed and not apples packed",
+      "parsed_expression": [
+        [
+          [
+            "not",
+            "carrots packed"
+          ],
+          "and",
+          [
+            "not",
+            "apples packed"
+          ]
+        ]
+      ],
+      "time": 1
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "buy carrots by shopper causes carrots packed",
+      "action": "buy carrots",
+      "agent": "shopper",
+      "statement_type": "causes",
+      "effects": "carrots packed",
+      "condition": null
+    },
+    {
+      "original_expression": "buy apples by shopper causes apples packed",
+      "action": "buy apples",
+      "agent": "shopper",
+      "statement_type": "causes",
+      "effects": "apples packed",
+      "condition": null
+    },
+    {
+      "original_expression": "take carrots by shopper causes carrots taken",
+      "action": "take carrots",
+      "agent": "shopper",
+      "statement_type": "causes",
+      "effects": "carrots taken",
+      "condition": null
+    },
+    {
+      "original_expression": "take apples by shopper causes apples taken",
+      "action": "take apples",
+      "agent": "shopper",
+      "statement_type": "causes",
+      "effects": "apples taken",
+      "condition": null
+    }
+  ],
+  "QUERY": []
+}
