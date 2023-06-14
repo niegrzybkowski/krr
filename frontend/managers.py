@@ -156,14 +156,14 @@ class TimeManager:
         self.display = [
             [sg.Text("Time settings:")],
             [sg.Text("Unit:"), sg.Text(self.unit, key=self.unit_id), sg.Button("Edit", key=f"{self.unit_id}BUTTON-")],
-            [sg.Text("Step:"), sg.Text(f"{self.step}{self.unit}", key=self.step_id), sg.Button("Edit", key=f"{self.step_id}BUTTON-")],
+            #[sg.Text("Step:"), sg.Text(f"{self.step}{self.unit}", key=self.step_id), sg.Button("Edit", key=f"{self.step_id}BUTTON-")],
             [sg.Text("Termination:"), sg.Text(f"{self.termination}{self.unit}", key=self.termination_id), sg.Button("Edit", key=f"{self.termination_id}BUTTON-")]
         ]
     
     
     def update(self, window):
         window[self.unit_id].update(self.unit)
-        window[self.step_id].update(str(self.step) + self.unit)
+        #window[self.step_id].update(str(self.step) + self.unit)
         window[self.termination_id].update(str(self.termination) + self.unit)
     
 
