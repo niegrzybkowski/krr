@@ -152,7 +152,7 @@ class ActionQuery(Query):
     def run(self) -> str:
         models = super(ActionQuery, self).run()
         item = self.scenario.timepoints.get(self.time, None)
-        is_performed = item is not None and item.is_acs() and item.acs[0] == self.action
+        is_performed = item is not None and item.is_acs() and self.time < self.termination and item.acs[0] == self.action
         if len(models) != 0:
             if is_performed:
                 return f"Action {self.action.name} is performed in moment {self.time} in this Scenario"
