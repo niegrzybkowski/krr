@@ -1,0 +1,117 @@
+{
+  "AGENT": [
+    "car",
+    "chicken"
+  ],
+  "ACTION": [
+    "crossing the road",
+    "chicken ran over"
+  ],
+  "STATE": [
+    "chicken alive",
+    "chicken on the road"
+  ],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [
+    {
+      "action": "crossing the road",
+      "agent": "chicken",
+      "time": 1
+    },
+    {
+      "action": "chicken ran over",
+      "agent": "car",
+      "time": 2
+    }
+  ],
+  "OBS": [
+    {
+      "original_expression": "chicken alive and not chicken on the road",
+      "parsed_expression": [
+        [
+          "chicken alive",
+          "and",
+          [
+            "not",
+            "chicken on the road"
+          ]
+        ]
+      ],
+      "time": 0
+    }
+  ],
+  "STATEMENT": [
+    {
+      "original_expression": "crossing the road by chicken causes chicken on the road if chicken alive",
+      "action": "crossing the road",
+      "agent": "chicken",
+      "statement_type": "causes",
+      "effects": "chicken on the road",
+      "condition": "chicken alive"
+    },
+    {
+      "original_expression": "chicken ran over by car releases chicken alive",
+      "action": "chicken ran over",
+      "agent": "car",
+      "statement_type": "releases",
+      "effects": "chicken alive",
+      "condition": null
+    }
+  ],
+  "QUERY": [
+    {
+      "original_expression": "agent car is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "car"
+      }
+    },
+    {
+      "original_expression": "agent chicken is active when sc",
+      "query_type": "agent",
+      "concrete_query": {
+        "agent": "chicken"
+      }
+    },
+    {
+      "original_expression": "necessary chicken ran over by car at 2 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "chicken ran over",
+        "agent": "car",
+        "time": 2
+      }
+    },
+    {
+      "original_expression": "necessary crossing the road by chicken at 1 when sc",
+      "query_type": "action",
+      "concrete_query": {
+        "action": "crossing the road",
+        "agent": "chicken",
+        "time": 1
+      }
+    },
+    {
+      "original_expression": "necessary chicken alive at 1",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "necessary",
+        "condition": "chicken alive",
+        "time": 1
+      }
+    },
+    {
+      "original_expression": "possibly chicken alive at 2",
+      "query_type": "fluent",
+      "concrete_query": {
+        "kind": "possibly",
+        "condition": "chicken alive",
+        "time": 2
+      }
+    }
+  ]
+}
