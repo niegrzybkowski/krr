@@ -72,7 +72,7 @@ def main():
     , expand_y=True
     ) ]]
 
-    window = sg.Window('KRR', layout, location=DEFAULT_LOCATION, resizable =True, finalize=True)
+    window = sg.Window('Scenarios with Agents', layout, location=DEFAULT_LOCATION, resizable =True, finalize=True)
     window.set_min_size((500, 350))
 
     try:
