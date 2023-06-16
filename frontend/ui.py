@@ -5,6 +5,21 @@ from frontend.utils import get_default_location
 
 sg.theme('dark grey 9')   
 
+ZERO_DATA = {
+  "AGENT": [],
+  "ACTION": [],
+  "STATE": [],
+  "TIME": {
+    "unit": "h",
+    "step": 1,
+    "termination": 24
+  },
+  "ACS": [],
+  "OBS": [],
+  "STATEMENT": [],
+  "QUERY": []
+}
+
 DEFAULT_LOCATION = get_default_location()
 
 def main():
@@ -38,7 +53,9 @@ def main():
         [sg.Button("-SUBMIT-", bind_return_key=True, visible=False)]
     ]
 
-    layout = [[ sg.TabGroup([[
+    layout = [
+        [sg.Button("Enter new domain", key="-RESET-", button_color=("white", "green"))],
+        [ sg.TabGroup([[
         sg.Tab("Agents", agent_manager.display, key=agent_manager.content_name),
         sg.Tab("Actions", action_manager.display, key=action_manager.content_name),
         sg.Tab("Fluents", state_manager.display, key=state_manager.content_name),
@@ -94,6 +111,11 @@ def main():
                     print(traceback.format_exc())
                     manager_manager.set_data(backup)
             
+            if event == "-RESET-":
+                answer = sg.popup_yes_no("Are you sure you want to enter a new domain? Any unsaved data will be lost.")
+                if answer == "Yes":
+                    manager_manager.set_data(ZERO_DATA)
+
             manager_manager.update_all(window)
 
     finally:
