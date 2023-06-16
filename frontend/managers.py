@@ -304,6 +304,9 @@ class ACSManager(SimpleCollectionManager):
         except ValueError:
             sg.popup_error("Time needs to be an integer", location=DEFAULT_LOCATION)
             return False
+        if time in [item.time for item in self.contents]:
+            sg.popup_error(f'Only one ACS can exist for given time step')
+            return False
         if time % self.time_manager.step != 0:
             sg.popup_error("Time needs to be a multiple of the time step", location=DEFAULT_LOCATION)
             return False
