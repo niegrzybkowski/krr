@@ -24,7 +24,6 @@ class Action:
             self, obs: tp.Obs, statements: List[st.Statement]
     ) -> List[tp.Obs]:
         """run action by agent if """
-        postconditions: List[List[state.State]] = []
         causes_satisfied: int = 0
         causes_structure = []
 
@@ -36,7 +35,8 @@ class Action:
                 else:
                     causes_structure.extend(["and", _statement.formula.structure])
 
-        postconditions = formula.Formula(causes_structure).get_all_possibilities()
+        postconditions: List[List[state.State]] = [possibility.states for possibility in
+                                                   formula.Formula(causes_structure).get_all_possibilities()]
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
             if _statement.precondition.bool(obs=obs):
