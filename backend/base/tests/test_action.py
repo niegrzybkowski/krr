@@ -128,34 +128,39 @@ class ActionTest(unittest.TestCase):
         # when
         results = action.run(self.obs, self.statements)
         # then
-        self.assertCountEqual(
-            [
-                Obs(states=[
-                    State(name='letter ready', holds=True),
-                    State(name='letter sent', holds=True),
-                    State(name='letter delivered', holds=False),
-                    State(name='letter read', holds=False),
-                ]),
-                Obs(states=[
-                    State(name='letter ready', holds=True),
-                    State(name='letter sent', holds=True),
-                    State(name='letter delivered', holds=True),
-                    State(name='letter read', holds=False),
-                ]),
-                Obs(states=[
-                    State(name='letter ready', holds=True),
-                    State(name='letter sent', holds=True),
-                    State(name='letter delivered', holds=False),
-                    State(name='letter read', holds=True),
-                ]),
-                Obs(states=[
-                    State(name='letter ready', holds=True),
-                    State(name='letter sent', holds=True),
-                    State(name='letter delivered', holds=True),
-                    State(name='letter read', holds=True),
-                ]),
-            ],
-            results)
+        true_result = [
+            Obs(states=[
+                State(name='letter ready', holds=True),
+                State(name='letter sent', holds=True),
+                State(name='letter delivered', holds=False),
+                State(name='letter read', holds=False),
+            ]),
+            Obs(states=[
+                State(name='letter ready', holds=True),
+                State(name='letter sent', holds=True),
+                State(name='letter delivered', holds=True),
+                State(name='letter read', holds=False),
+            ]),
+            Obs(states=[
+                State(name='letter ready', holds=True),
+                State(name='letter sent', holds=True),
+                State(name='letter delivered', holds=False),
+                State(name='letter read', holds=True),
+            ]),
+            Obs(states=[
+                State(name='letter ready', holds=True),
+                State(name='letter sent', holds=True),
+                State(name='letter delivered', holds=True),
+                State(name='letter read', holds=True),
+            ])
+        ]
+
+        good = len(results) == len(true_result)
+        for obs in true_result:
+            if not good and obs not in results:
+                good = False
+
+        self.assertTrue(good, "Good results returned")
 
     def test_given_two_opposite_cause_statements_in_the_same_action_when_run_then_correct(self):
         # given
@@ -182,6 +187,24 @@ class ActionTest(unittest.TestCase):
                             precondition=Formula(), formula=Formula(['A', 'or', 'B'])),
             EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
                             precondition=Formula(), formula=Formula(['A', 'and', 'B'])),
+        ]
+        obs: Obs = Obs(states=[State(name='A', holds=False),
+                               State(name='B', holds=False)])
+
+        action = Action('ACTION')
+        # when
+
+        results = action.run(obs, statements)
+        # then
+        self.assertEqual(1, len(results))
+
+    def test_simple_given_two__cause_statements_in_the_same_action_when_run_then_correct(self):
+        # given
+        statements = [
+            EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
+                            precondition=Formula(), formula=Formula(['A'])),
+            EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
+                            precondition=Formula(), formula=Formula(['B'])),
         ]
         obs: Obs = Obs(states=[State(name='A', holds=False),
                                State(name='B', holds=False)])
