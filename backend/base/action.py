@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 from . import ParsingException
-from . import timepoint as tp, statement as st, state as state, exception as exc
+from . import timepoint as tp, statement as st, state as state, formula, exception as exc
 
 
 @dataclass(slots=True)
@@ -26,20 +26,17 @@ class Action:
         """run action by agent if """
         postconditions: List[List[state.State]] = []
         causes_satisfied: int = 0
+        causes_structure = []
 
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition.bool(obs=obs):
                 causes_satisfied += 1
                 if causes_satisfied <= 1:
-                    for post_obs in _statement.postcondition:
-                        postconditions.append(post_obs.states)
+                    causes_structure.append(_statement.formula.structure)
                 else:
-                    temp = [post_obs.states for post_obs in _statement.postcondition]
-                    new_postconditions = []
-                    for temp_state in temp:
-                        if temp_state in postconditions:
-                            new_postconditions.append(temp_state)
-                    postconditions = new_postconditions
+                    causes_structure.extend(["and", _statement.formula.structure])
+
+        postconditions = formula.Formula(causes_structure).get_all_possibilities()
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
             if _statement.precondition.bool(obs=obs):
@@ -49,8 +46,7 @@ class Action:
                     postconditions = []
                     for postcondition in old_postconditions:
                         if _statement.postcondition in postcondition:
-                            raise exc.LogicException('Release and Effect statement cannot be defined for '
-                                                     f'the same state ({_statement.postcondition.name})')
+                            continue
                         temp = copy(postcondition)
                         temp2 = copy(postcondition)
                         temp.append(state.State(_statement.postcondition.name, False))

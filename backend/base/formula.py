@@ -84,6 +84,8 @@ class Formula:
         return sorted(list(filtered))
 
     def get_all_possibilities(self) -> List[tp.Obs]:
+        if self.structure == []:
+            return []
         states = self.extract_states()
         true_states = [obs for obs in _get_all_possibilities(states) if self.bool(obs)]
 
