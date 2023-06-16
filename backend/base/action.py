@@ -25,10 +25,21 @@ class Action:
     ) -> List[tp.Obs]:
         """run action by agent if """
         postconditions: List[List[state.State]] = []
+        causes_satisfied: int = 0
+
         for _statement in filter(lambda x: isinstance(x, st.EffectStatement), statements):
             if _statement.precondition.bool(obs=obs):
-                for post_obs in _statement.postcondition:
-                    postconditions.append(post_obs.states)
+                causes_satisfied += 1
+                if causes_satisfied <= 1:
+                    for post_obs in _statement.postcondition:
+                        postconditions.append(post_obs.states)
+                else:
+                    temp = [post_obs.states for post_obs in _statement.postcondition]
+                    new_postconditions = []
+                    for temp_state in temp:
+                        if temp_state in postconditions:
+                            new_postconditions.append(temp_state)
+                    postconditions = new_postconditions
 
         for _statement in filter(lambda x: isinstance(x, st.ReleaseStatement), statements):
             if _statement.precondition.bool(obs=obs):

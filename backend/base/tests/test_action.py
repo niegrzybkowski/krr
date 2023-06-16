@@ -156,3 +156,39 @@ class ActionTest(unittest.TestCase):
                 ]),
             ],
             results)
+
+    def test_given_two_opposite_cause_statements_in_the_same_action_when_run_then_correct(self):
+        # given
+        statements = [
+            EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
+                            precondition=Formula(), formula=Formula(['A'])),
+            EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
+                            precondition=Formula(), formula=Formula(['not', 'A'])),
+        ]
+        obs: Obs = Obs(states=[State(name='A', holds=False),
+                               State(name='B', holds=False)])
+
+        action = Action('ACTION')
+        # when
+
+        results = action.run(obs, statements)
+        # then
+        self.assertEqual(0, len(results))
+
+    def test_given_two_slightly_opposite_cause_statements_in_the_same_action_when_run_then_correct(self):
+        # given
+        statements = [
+            EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
+                            precondition=Formula(), formula=Formula(['A', 'or', 'B'])),
+            EffectStatement(action=Action('ACTION'), agent=Agent('Bill'),
+                            precondition=Formula(), formula=Formula(['A', 'and', 'B'])),
+        ]
+        obs: Obs = Obs(states=[State(name='A', holds=False),
+                               State(name='B', holds=False)])
+
+        action = Action('ACTION')
+        # when
+
+        results = action.run(obs, statements)
+        # then
+        self.assertEqual(1, len(results))
