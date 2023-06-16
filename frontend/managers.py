@@ -357,7 +357,7 @@ class OBSManager(SimpleCollectionManager):
     
     def handle_event(self, window, event, values):
         if event == f"-{self.content_name}-TEMPLATE-":
-            window[self.text_field_key].update("(LOGIC EXPRESSION, TIME)")
+            window[self.text_field_key].update("(FORMULA, TIME)")
         if "TIME" in event:
             self.update(window)
         return super().handle_event(window, event, values)
@@ -380,8 +380,8 @@ class StatementManager(SimpleCollectionManager):
                 sg.Button("Insert 'Releases' Template", key=f"-{self.content_name}-TEMPLATE-RELEASES-"), 
             ],
             [sg.Text(f"Statement syntax is split between two types: causes statements and releases statements\n"+
-                     "Causes statements have the following syntax: ACTION [by AGENT] causes LOGIC EXPRESSION [if LOGIC EXPRESSION]\n" +
-                     "Releases statements have the following syntax: ACTION [by AGENT] releases FLUENT [if LOGIC EXPRESSION]\n" +
+                     "Causes statements have the following syntax: ACTION [by AGENT] causes FORMULA [if FORMULA]\n" +
+                     "Releases statements have the following syntax: ACTION [by AGENT] releases FLUENT [if FORMULA]\n" +
                      "Capital letters denote appropriate objects within the scenario, parts of the syntax in brackets [] are optional\n"+
                      "Enter the statement into the text field, which will then be parsed. Confirm with 'Add' button.\n" +
                      "Press one of the 'Insert Template' buttons to insert a template.")]
@@ -416,9 +416,9 @@ class StatementManager(SimpleCollectionManager):
 
     def handle_event(self, window, event, values):
         if event == f"-{self.content_name}-TEMPLATE-CAUSES-":
-            window[self.text_field_key].update("ACTION by AGENT causes LOGIC EXPRESSION if LOGIC EXPRESSION")
+            window[self.text_field_key].update("ACTION by AGENT causes FORMULA if FORMULA")
         if event == f"-{self.content_name}-TEMPLATE-RELEASES-":
-            window[self.text_field_key].update("ACTION by AGENT releases FLUENT if LOGIC EXPRESSION")
+            window[self.text_field_key].update("ACTION by AGENT releases FLUENT if FORMULA")
         return super().handle_event(window, event, values)
 
 class QueryManager(SimpleCollectionManager):
@@ -448,8 +448,8 @@ class QueryManager(SimpleCollectionManager):
                 sg.Button("Insert 'Agent' Template", key=f"-{self.content_name}-TEMPLATE-AGENT-"), 
             ],
             [sg.Text(f"Query syntax is split between 4 types: necessary state, possible state, action, and agent queries.\n"+
-                     "Necessary state queries have the following syntax: Necessary LOGIC EXPRESSION at TIME [when Sc]\n" +
-                     "Possible state queries have the following syntax: Possibly LOGIC EXPRESSION at TIME [when Sc]\n" +
+                     "Necessary state queries have the following syntax: Necessary FORMULA at TIME [when Sc]\n" +
+                     "Possible state queries have the following syntax: Possibly FORMULA at TIME [when Sc]\n" +
                      "Action queries have the following syntax: Necessary ACTION by AGENT at TIME [when Sc]\n" +
                      "Agent queries have the following syntax: Agent AGENT is active [when Sc]\n" +
                      "Capital letters denote appropriate objects within the scenario, parts of the syntax in brackets [] are optional\n"+
@@ -483,9 +483,9 @@ class QueryManager(SimpleCollectionManager):
     def handle_event(self, window, event, values):
         super().handle_event(window, event, values)
         if event == f"-{self.content_name}-TEMPLATE-NECESSARY-":
-            window[self.text_field_key].update("Necessary LOGIC EXPRESSION at TIME when Sc")
+            window[self.text_field_key].update("Necessary FORMULA at TIME when Sc")
         if event == f"-{self.content_name}-TEMPLATE-POSSIBLY-":
-            window[self.text_field_key].update("Possibly LOGIC EXPRESSION at TIME when Sc")
+            window[self.text_field_key].update("Possibly FORMULA at TIME when Sc")
         if event == f"-{self.content_name}-TEMPLATE-ACTION-":
             window[self.text_field_key].update("Necessary ACTION by AGENT at TIME when Sc")
         if event == f"-{self.content_name}-TEMPLATE-AGENT-":
