@@ -2,10 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional, Tuple, List
+from itertools import groupby
 
 from . import action, agent, state, formula
 from . import LogicException, ParsingException
 
+def intersperse(lst, item):
+    result = [item] * (len(lst) * 2 - 1)
+    result[0::2] = lst
+    return result
 
 @dataclass(slots=True)
 class Obs(list):
@@ -16,10 +21,12 @@ class Obs(list):
         return self.formula.get_all_possibilities()
 
     @classmethod
-    def from_ui(cls, data: dict) -> Obs:
+    def from_ui(cls, data: list) -> Obs:
         try:
+            _formula = [[item['parsed_expression']] for item in data]
+            _formula = intersperse(_formula, 'and')
             out = cls(
-                formula=formula.Formula.from_ui(data['parsed_expression'])
+                formula=formula.Formula.from_ui(_formula)
             )
         except Exception:
             raise ParsingException('Failed to parse obs.')
@@ -77,7 +84,7 @@ class TimePoint:
             out = [TimePoint(t=item['time'], acs=(action.Action(item['action']), agent.Agent(name=item['agent']))) for
                    item in data['ACS']]
             acs_t = list(map(lambda x: x.t, out))
-            obs = [(item['time'], Obs.from_ui(item)) for item in data['OBS']]
+            obs = [(time, Obs.from_ui(list(item))) for time, item in groupby(data['OBS'], lambda x: x['time'])]
             for _obs in obs:
                 if _obs[0] in acs_t:
                     tp = next(filter(lambda x: x.t == _obs[0], out))
