@@ -433,14 +433,14 @@ class QueryManager(SimpleCollectionManager):
         self.add_action_query_event_key = "-QUERY-ADD-ACTION-"
         self.add_agent_query_event_key = "-QUERY-ADD-AGENT-"
 
-        self.display = [
-            [sg.Text(f"Queries:")],
-            self.display[1],
-            [self.display[2][0]],
-            [sg.Button("Add state query", key=self.add_fluent_query_event_key),
-            sg.Button("Add action query", key=self.add_action_query_event_key),
-            sg.Button("Add agent query", key=self.add_agent_query_event_key),
-            sg.Button("Remove", key=self.remove_event_key)],
+        self.display = self.display + [
+            # [sg.Text(f"Queries:")],
+            # self.display[1],
+            # [self.display[2][0]],
+            # [sg.Button("Add state query", key=self.add_fluent_query_event_key),
+            # sg.Button("Add action query", key=self.add_action_query_event_key),
+            # sg.Button("Add agent query", key=self.add_agent_query_event_key),
+            # sg.Button("Remove", key=self.remove_event_key)],
             [
                 sg.Button("Insert 'Neccessary State' Template", key=f"-{self.content_name}-TEMPLATE-NECESSARY-"), 
                 sg.Button("Insert 'Possibly State' Template", key=f"-{self.content_name}-TEMPLATE-POSSIBLY-"), 
@@ -457,12 +457,25 @@ class QueryManager(SimpleCollectionManager):
                      "Press one of the 'Insert Template' buttons to insert a template.")]
         ]
 
-    def validate_add(self, element, query_type):
+    def infer_query_type(self, element):
+        for query_type in ["fluent", "action", "agent"]:
+            element_dataclass = Query(element, query_type, self.state_manager, self.action_manager, self.agent_manager,  self.time_manager, quiet=True)
+            if element_dataclass.parse():
+                return element_dataclass
+        sg.popup_error("Could not infer query type.") # parser messages are bad but this is worse
+        return False
+
+    def validate_add(self, element, query_type="infer"):
         if element is None:
             return False
-        element_dataclass = Query(element, query_type, self.state_manager, self.action_manager, self.agent_manager,  self.time_manager)
-        if not element_dataclass.parse():
-            return False
+        if query_type == "infer":
+            element_dataclass = self.infer_query_type(element)
+            if not element_dataclass:
+                return False
+        else:
+            element_dataclass = Query(element, query_type, self.state_manager, self.action_manager, self.agent_manager,  self.time_manager)
+            if not element_dataclass.parse():
+                return False
         if not super().validate_add(element_dataclass):
             return False
         return element_dataclass
@@ -485,7 +498,7 @@ class QueryManager(SimpleCollectionManager):
         if event == self.add_agent_query_event_key:
             self.request_new_element(window, query_type="agent")
     
-    def preprocess_element(self, element, query_type):
+    def preprocess_element(self, element, query_type="infer"):
         return self.validate_add(element, query_type) # jank
     
     def set_data(self, data):

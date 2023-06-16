@@ -203,6 +203,7 @@ class Query:
     agent_manager: any
     time_manager: any
     concrete_query: any = None
+    quiet: bool = False
     
     def __post_init__(self):
         if self.concrete_query is not None:
@@ -216,7 +217,8 @@ class Query:
     
     def validate_at_least_one(self, manager):
         if len(manager.contents) == 0:
-            sg.popup_error(f"At least one {manager.content_name_lower} is required to create a {self.query_type} query.", location=DEFAULT_LOCATION)
+            if not self.quiet:
+                sg.popup_error(f"At least one {manager.content_name_lower} is required to create a {self.query_type} query.", location=DEFAULT_LOCATION)
             return False
         return True
 
@@ -277,7 +279,8 @@ class Query:
             parsed_expression = parser.parse_string(self.original_expression, parse_all=True).as_list()
             data_element = constructor(*parsed_expression)
         except pp.exceptions.ParseException as e:
-            sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
+            if not self.quiet:
+                sg.popup_error(f"Unable to parse expression.\nParser message: {e}", location=DEFAULT_LOCATION)
             return False
         self.concrete_query = data_element
         return self
