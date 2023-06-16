@@ -179,7 +179,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Action write letter is performed in moment 1 in this Scenario")
+        self.assertTrue(result, f"Action write letter is performed in moment 1 in this Scenario")
 
     def test_when_action_query_given_run_then_action_not_performed(self):
         # given
@@ -189,7 +189,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Action write letter is not performed in moment 3 in this Scenario")
+        self.assertFalse(result, f"Action write letter is not performed in moment 3 in this Scenario")
 
     def test_when_agent_query_given_run_then_action_not_performed(self):
         # given
@@ -199,7 +199,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Agent Postman is not active in this Scenario")
+        self.assertFalse(result, f"Agent Postman is not active in this Scenario")
 
     def test_when_agent_query_given_run_then_agent_not_active(self):
         # given
@@ -209,7 +209,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Agent Kaka is not active in this Scenario")
+        self.assertFalse(result, f"Agent Kaka is not active in this Scenario")
 
     def test_when_formula_query_given_run_then_necessary_at_t(self):
         # given
@@ -222,7 +222,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Formula always holds at t=3")
+        self.assertTrue(result, f"Formula always holds at t=3")
 
     def test_when_formula_query_given_run_then_possible_at_t(self):
         # given
@@ -234,7 +234,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Formula sometimes holds at t=5")
+        self.assertTrue(result, f"Formula sometimes holds at t=5")
 
     def test_when_formula_query_given_run_then_not_hold_at_t(self):
         # given
@@ -246,7 +246,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Formula never holds at t=2")
+        self.assertFalse(result, f"Formula never holds at t=2")
 
     def test_when_multiple_fluent_in_formula_query_given_run_then_hold_at_t(self):
         # given
@@ -258,7 +258,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Formula always holds at t=3")
+        self.assertTrue(result, f"Formula always holds at t=3")
 
     def test_when_multiple_fluent_in_formula_query_given_run_then_not_hold_at_t(self):
         # given
@@ -270,7 +270,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Formula doesn't always hold at t=2")
+        self.assertFalse(result, f"Formula doesn't always hold at t=2")
 
     def test_when_multiple_obs_query_given_run_then_one_result(self):
         # given
@@ -293,7 +293,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Formula always holds at t=4")
+        self.assertTrue(result, f"Formula always holds at t=4")
 
     def test_when_multiple_obs_and_action_query_given_run_then_necessary_at_t(self):
         # given
@@ -303,7 +303,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Action read letter is performed in moment 4 in this Scenario")
+        self.assertTrue(result, f"Action read letter is performed in moment 4 in this Scenario")
 
     def test_when_multiple_obs_and_agent_query_given_run_then_active(self):
         # given
@@ -313,7 +313,7 @@ class QueryTestCase(unittest.TestCase):
         # when
         result = query.run()
         # then
-        self.assertEqual(result, f"Agent Postman is active in this Scenario")
+        self.assertTrue(result, f"Agent Postman is active in this Scenario")
 
     def test_when_multiple_obs_and_query_given_run_then_not_realizable(self):
         # given
