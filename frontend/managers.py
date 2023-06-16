@@ -10,6 +10,27 @@ import traceback
 
 DEFAULT_LOCATION = get_default_location()
 
+class CheatSheet:
+    def __init__(self, prefix, source_element_key, key):
+        self.prefix = "Currently available " + prefix
+        self.source_element_key = source_element_key
+        self.key = key
+        self.display = sg.Multiline(prefix + "\n", expand_x=True, size=(10, 6), key=self.key)
+
+    @staticmethod
+    def from_manager(manager, who_asked):
+        return CheatSheet(
+            prefix = f"{manager.content_name_lower}s:",
+            source_element_key = manager.contents_display_id,
+            key=f"-CS-{who_asked}{manager.contents_display_id}"
+        )
+
+    def update(self, window):
+        element_contents = window[self.source_element_key].get()
+        window[self.key].update(
+            self.prefix + "\n" + element_contents
+        )
+
 class CollectionManager:
     def __init__(self, contents_display_id):
         self.contents_display_id = contents_display_id
@@ -235,14 +256,20 @@ class ACSManager(SimpleCollectionManager):
         self.time_manager = time_manager
         self.content_name_lower = "ACS"
         self.content_name_title = "ACS"
+
+        self.action_cs = CheatSheet.from_manager(actions_manager, self.content_name)
+        self.agent_cs = CheatSheet.from_manager(agent_manager, self.content_name)
+
         self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
         self.display = self.display + [
             [sg.Button("Insert Template", key=f"-{self.content_name}-TEMPLATE-")],
 
-            [sg.Text(f"ACS are comma separated triples of Action, Agent, Time. Type these 3 elements into the text field, separated by commas, then press the 'Add' button.\n"+
+            [sg.Text(f"ACS are comma separated triples of Action, Agent, Time.\n"+
+                     "Type these 3 elements into the text field, separated by commas, then press the 'Add' button.\n"+
                      "To remove an element press the 'Remove' button to open the deletion dialog.\n"+
-                     "Press the 'Insert Template' button to insert a template.")
-        ]]
+                     "Press the 'Insert Template' button to insert a template.")],
+            [self.action_cs.display, self.agent_cs.display]
+            ]
     
     def remove_fluff(self, element):
         element = element.replace("(" , "")
@@ -301,6 +328,11 @@ class ACSManager(SimpleCollectionManager):
     def set_data(self, data):
         self.contents = [ACS(time_manager=self.time_manager, **data_item) for data_item in data]
 
+    def update(self, window):
+        self.action_cs.update(window)
+        self.agent_cs.update(window)
+        return super().update(window)
+
 class OBSManager(SimpleCollectionManager):
     def __init__(self, state_manager, time_manager):
         super().__init__("OBS")
@@ -308,6 +340,8 @@ class OBSManager(SimpleCollectionManager):
         self.time_manager = time_manager
         self.content_name_lower = "OBS"
         self.content_name_title = "OBS"
+        self.state_cs = CheatSheet.from_manager(state_manager, "OBS")
+
         self.display[0] = [sg.Text(f"{self.content_name_title}s:")]
         self.display = self.display + [
             [sg.Button("Insert Template", key=f"-{self.content_name}-TEMPLATE-")],
@@ -315,7 +349,8 @@ class OBSManager(SimpleCollectionManager):
                      "Logic expressions are a text representation using English equivalents of symbols ('not' (unary negation), 'and', 'or', 'implies', 'if and only if').\n" +
                      "Leaves of the expression are fluents. Brackets denote precedence: '(State1 or not State2) and State3'.\n" +
                      "Enter the logic expression and time, separated by a comma, into the text field, which will then be parsed. Confirm with 'Add' button.\n" +
-                     "Press the 'Insert Template' button to insert a template.")]
+                     "Press the 'Insert Template' button to insert a template.")],
+            [self.state_cs.display]
         ]
     
     def remove_fluff(self, element):
@@ -367,6 +402,11 @@ class OBSManager(SimpleCollectionManager):
         for statement in self.contents:
             if not statement.parse():
                 raise ValueError()
+            
+    def update(self, window):
+        self.state_cs.update(window)
+        return super().update(window)
+
 
 class StatementManager(SimpleCollectionManager):
     def __init__(self, action_manager, agent_manager, state_manager):
@@ -374,17 +414,23 @@ class StatementManager(SimpleCollectionManager):
         self.action_manager = action_manager
         self.agent_manager = agent_manager
         self.state_manager = state_manager
+
+        self.action_cs = CheatSheet.from_manager(action_manager, self.content_name)
+        self.agent_cs = CheatSheet.from_manager(agent_manager, self.content_name)
+        self.state_cs = CheatSheet.from_manager(state_manager, self.content_name)
+
         self.display = self.display + [
             [
                 sg.Button("Insert 'Causes' Template", key=f"-{self.content_name}-TEMPLATE-CAUSES-"), 
                 sg.Button("Insert 'Releases' Template", key=f"-{self.content_name}-TEMPLATE-RELEASES-"), 
             ],
             [sg.Text(f"Statement syntax is split between two types: causes statements and releases statements\n"+
-                     "Causes statements have the following syntax: ACTION [by AGENT] causes FORMULA [if FORMULA]\n" +
-                     "Releases statements have the following syntax: ACTION [by AGENT] releases FLUENT [if FORMULA]\n" +
+                     "Causes statements have the following syntax: ACTION by AGENT causes FORMULA [if FORMULA]\n" +
+                     "Releases statements have the following syntax: ACTION by AGENT releases FLUENT [if FORMULA]\n" +
                      "Capital letters denote appropriate objects within the scenario, parts of the syntax in brackets [] are optional\n"+
                      "Enter the statement into the text field, which will then be parsed. Confirm with 'Add' button.\n" +
-                     "Press one of the 'Insert Template' buttons to insert a template.")]
+                     "Press one of the 'Insert Template' buttons to insert a template.")],
+            [self.action_cs.display, self.agent_cs.display, self.state_cs.display]
         ]
 
     def validate_add(self, element):
@@ -420,6 +466,12 @@ class StatementManager(SimpleCollectionManager):
         if event == f"-{self.content_name}-TEMPLATE-RELEASES-":
             window[self.text_field_key].update("ACTION by AGENT releases FLUENT if FORMULA")
         return super().handle_event(window, event, values)
+    
+    def update(self, window):
+        self.action_cs.update(window)
+        self.agent_cs.update(window)
+        self.state_cs.update(window)
+        return super().update(window)
 
 class QueryManager(SimpleCollectionManager):
     def __init__(self, action_manager, agent_manager, state_manager, time_manager):
@@ -428,6 +480,10 @@ class QueryManager(SimpleCollectionManager):
         self.agent_manager = agent_manager
         self.state_manager = state_manager
         self.time_manager = time_manager
+
+        self.action_cs = CheatSheet.from_manager(action_manager, self.content_name)
+        self.agent_cs = CheatSheet.from_manager(agent_manager, self.content_name)
+        self.state_cs = CheatSheet.from_manager(state_manager, self.content_name)
 
         self.add_fluent_query_event_key = "-QUERY-ADD-FLUENT-"
         self.add_action_query_event_key = "-QUERY-ADD-ACTION-"
@@ -454,7 +510,8 @@ class QueryManager(SimpleCollectionManager):
                      "Agent queries have the following syntax: Agent AGENT is active [when Sc]\n" +
                      "Capital letters denote appropriate objects within the scenario, parts of the syntax in brackets [] are optional\n"+
                      "Enter the query into the text field, which will then be parsed. Confirm with the appropriate 'Add' button.\n" +
-                     "Press one of the 'Insert Template' buttons to insert a template.")]
+                     "Press one of the 'Insert Template' buttons to insert a template.")],
+            [self.action_cs.display, self.agent_cs.display, self.state_cs.display]
         ]
 
     def infer_query_type(self, element):
@@ -515,6 +572,12 @@ class QueryManager(SimpleCollectionManager):
         for statement in self.contents:
             if not statement.parse():
                 raise ValueError()
+            
+    def update(self, window):
+        self.action_cs.update(window)
+        self.agent_cs.update(window)
+        self.state_cs.update(window)
+        return super().update(window)
     
 class ScenarioManager:
     def __init__(self, manager_manager):
