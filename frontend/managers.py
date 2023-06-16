@@ -70,7 +70,8 @@ class SimpleCollectionManager(CollectionManager):
         self.display = [
             [sg.Text(f"{self.content_name_title}s:", key=f"-{content_name}-HEADER-")],
             [self.contents_display],
-            [sg.Input("", key=self.text_field_key), sg.Button("Add", key=self.add_event_key), sg.Button("Remove", key=self.remove_event_key)]
+            [sg.Input("", key=self.text_field_key), sg.Button("Add", key=self.add_event_key, button_color=("white", "green"))],
+            [sg.Button("Remove", key=self.remove_event_key, button_color=("white", "red"))]
         ]
 
     def popup_add(self, **_):
