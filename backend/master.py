@@ -29,7 +29,7 @@ def run_queries(data: dict):
     out = {}
     for i, query in enumerate(data['queries']):
         try:
-            msg = query.run()
+            msg = str(query.run())
         except BackendException as e:
             msg = getattr(e, 'message', repr(e))
         except Exception as e:

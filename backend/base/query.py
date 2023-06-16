@@ -149,15 +149,15 @@ class ActionQuery(Query):
             raise ParsingException('Failed to parse action query.')
         return out
 
-    def run(self) -> str:
+    def run(self) -> bool:
         models = super(ActionQuery, self).run()
         item = self.scenario.timepoints.get(self.time, None)
-        is_performed = item is not None and item.is_acs() and self.time < self.termination and item.acs[0] == self.action
+        is_performed = item is not None and item.is_acs() and self.time < self.termination and \
+                       item.acs[0] == self.action
         if len(models) != 0:
             if is_performed:
-                return f"Action {self.action.name} is performed in moment {self.time} in this Scenario"
-
-        return f"Action {self.action.name} is not performed in moment {self.time} in this Scenario"
+                return True
+        return False
 
 
 @dataclass(slots=True)
@@ -190,17 +190,17 @@ class FormulaQuery(Query):
             raise ParsingException('Failed to parse fluent query.')
         return out
 
-    def run(self) -> str:
+    def run(self) -> bool:
         models = super(FormulaQuery, self).run()
         if len(models) != 0:
             condition_models = [model.condition_holds(self.possibilities, self.time) for model in models]
             if self.mode == 'necessary':
                 if all(condition_models):
-                    return f"Formula always holds at t={self.time}"
-                return f"Formula doesn't always hold at t={self.time}"
+                    return True
+                return False
             if any(condition_models):
-                return f"Formula sometimes holds at t={self.time}"
-            return f"Formula never holds at t={self.time}"
+                return True
+            return False
 
 
 def flatten_list(_list: List[List[Obs]]) -> List[Obs]:
@@ -235,7 +235,7 @@ class AgentQuery(Query):
             raise ParsingException('Failed to parse agent query.')
         return out
 
-    def run(self) -> str:
+    def run(self) -> bool:
         models = super(AgentQuery, self).run()
         is_active = True
         if len(models) != 0:
@@ -245,6 +245,6 @@ class AgentQuery(Query):
                     break
 
         if is_active:
-            return f"Agent {self.agent.name} is active in this Scenario"
+            return True
 
-        return f"Agent {self.agent.name} is not active in this Scenario"
+        return False
