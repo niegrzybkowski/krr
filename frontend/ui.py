@@ -64,7 +64,7 @@ def main():
         sg.Tab("OBS", obs_manager.display, key=obs_manager.content_name),
         sg.Tab("Statements", statement_manager.display, key=statement_manager.content_name),
         sg.Tab("Query", query_manager.display, key=query_manager.content_name),
-        sg.Tab("Scenario", scenario_manager.display),
+        sg.Tab("Query Results", scenario_manager.display),
         sg.Tab("Save", serdelizer_layout),
     ]]
     , key="-TAB-"
